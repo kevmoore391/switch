@@ -1,36 +1,255 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <title>Socket.io</title>
-    </head>
- 
-    <body>
-        <h1 id="serverMessage">Communicating with socket.io!</h1>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {font-family: Arial, Helvetica, sans-serif;}
 
-        <p><input type="button" value="Find a Game" id="game" /></p>
+/* Full-width input fields */
+input[type=text], input[type=password] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
 
+/* Set a style for all buttons */
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+}
 
-        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
-        <script src="/socket.io/socket.io.js"></script>
-        <script>
-            var socket = io.connect('http://localhost:3000');
+button:hover {
+    opacity: 0.8;
+}
 
-            // The visitor is asked for their username...
-            var username = prompt('What\'s your username?');
+/* Extra styles for the cancel button */
+.cancelbtn {
+    width: auto;
+    padding: 10px 18px;
+    background-color: #f44336;
+}
+
+/* Center the image and position the close button */
+.imgcontainer {
+    text-align: center;
+    margin: 24px 0 12px 0;
+    position: relative;
+}
+
+img.avatar {
+    width: 40%;
+    border-radius: 50%;
+}
+
+.container {
+    padding: 16px;
+}
+
+span.psw {
+    float: right;
+    padding-top: 16px;
+}
+
+/* The Modal (background) */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    padding-top: 60px;
+}
+
+/* Modal Content/Box */
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto 15% auto; /* 5% from the top, 15% from the bottom and centered */
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+}
+
+/* The Close Button (x) */
+.close {
+    position: absolute;
+    right: 25px;
+    top: 0;
+    color: #000;
+    font-size: 35px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: red;
+    cursor: pointer;
+}
+
+/* Add Zoom Animation */
+.animate {
+    -webkit-animation: animatezoom 0.6s;
+    animation: animatezoom 0.6s
+}
+
+@-webkit-keyframes animatezoom {
+    from {-webkit-transform: scale(0)} 
+    to {-webkit-transform: scale(1)}
+}
+    
+@keyframes animatezoom {
+    from {transform: scale(0)} 
+    to {transform: scale(1)}
+}
+
+/* Change styles for span and cancel button on extra small screens */
+@media screen and (max-width: 300px) {
+    span.psw {
+       display: block;
+       float: none;
+    }
+    .cancelbtn {
+       width: 100%;
+    }
+}
+</style>
+</head>
+<body>
+
+<h2>Switch client</h2>
+
+<button onclick="displayModal()" id="loginBtn" style="width:auto;">Login</button>
+<button id="getPlayers" style="width:auto;">get Players</button>
+<button id="logout" style="display: none; width:auto;">Log Off</button>
+<button id="findGames" style="display: none; width:auto;">Find Game</button>
+<button id="makeGame" style="display: none; width:auto;">Create a Game</button>
+
+<div id="loginModal" class="modal">
+  
+    <form class="modal-content animate" onsubmit="event.preventDefault()">
+        <div class="imgcontainer">
+            <span onclick="closeModal()" class="close" title="Close Modal">&times;</span>
+            <img src="img_avatar2.png" alt="Avatar" class="avatar">
+        </div>
+
+        <div class="container">
+            <label for="uname"><b>Username</b></label>
+            <input type="text" placeholder="Enter Username" name="uname" id="username" required>
+
+            <label for="psw"><b>Password</b></label>
+            <input type="password" placeholder="Enter Password" name="psw" id="psw" required>
             
-            // It's sent with the signal "little_newbie" (to differentiate it from "message")
-            socket.emit('little_newbie', username);
+            <button type="submit" id="login">Login</button>
+            <label>
+            <input type="checkbox" checked="checked" name="remember"> Remember me
+            </label>
+        </div>
 
-            // A dialog box is displayed when the server sends us a "message"
-            socket.on('message', function(message) {
-                $('serverMessage').text(message);
-            })
+        <div class="container" style="background-color:#f1f1f1">
+            <button type="button" id="cancel" onclick="closeModal()"class="cancelbtn">Cancel</button>
+            <span class="psw">Forgot <a href="#">password?</a></span>
+        </div>
+    </form>
+</div>
 
-            // When the button is clicked, a "message" is sent to the server
-            $('#game').click(function () {
-                socket.emit('gindGame', username);
-            })
-        </script>
-    </body>
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script>
+
+    var modal = $('#loginModal');
+    
+    function displayModal(){
+        
+        modal.css('display','block');
+        return true;
+    }
+
+    function closeModal(){
+        
+        modal.css('display','none');
+        return true;
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            closeModal();
+        }
+       
+    }
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+    var sessionId = null;
+    // The visitor is asked for their username...
+    
+    var socket = io.connect('http://localhost:3000');
+    //var login = io.connect('http://localhost:3000/login');
+    //var socket = io.connect('http://localhost:3000', username);
+
+    // A dialog box is displayed when the server sends us a "message"
+    socket.on('message', function(message) {
+        $('#serverMessage').text(message);
+    })
+
+    // When the button is clicked, a "message" is sent to the server
+    $('#findGames').click(function () {
+        socket.emit('findGame', username);
+    })
+
+    $('#login').click(function () {
+        let username = $('#username').val();
+        let password = $('#psw').val();
+        $('#loginModal').css('display','none');
+
+        socket.emit('login', username, password, function(data){
+            
+            if (data.success == 1){
+                sessionId = data["sessionId"];
+                $('#loginBtn').css('display','none');
+                $('#logout').css('display','block');
+                $('#findGames').css('display','block');
+                $('#makeGame').css('display','block');
+
+            } else {
+                $('#loginBtn').css('display','block');
+                $('#logout').css('display','none');
+                $('#findGames').css('display','none');
+                $('#makeGame').css('display','none');
+            }
+        })
+    })
+
+    $('#logout').click(function () {
+        
+        socket.emit('logout', username, function(data){
+            console.log(data["message"]);
+            
+            $('#loginBtn').css('display','block');
+            $('#logout').css('display','none');
+            $('#findGames').css('display','none');
+            $('#makeGame').css('display','none');
+            
+        })
+    })
+
+    $('#getPlayers').click(function () {
+        
+        socket.emit('getPlayers', function(data){
+            console.log(data);
+        })
+    })
+</script>
+</body>
 </html>
