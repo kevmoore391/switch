@@ -35,21 +35,15 @@ io.sockets.on('connection', function (client, username) {
     client.on('login', function (username, password, callback) {
         //this is where you check the user against db. 
         //lets assume thats all good for now.
-        
-        var loggedInAlready = false;
-        
-        for (var thePlayer in players){
-            if (thePlayer.sessionId = client.sessionId){
-                loggedInAlready = true;
-            }
-        }
 
-        if (loggedInAlready) {
+        var loggedInAlready = isUserLoggedIn(username);
+        if (loggedInAlready["loggedIn"]) {
+            client.id = loggedInAlready["sessionId"];
             var data = {"sessionId": client.sessionId, "success":1, "message": "you are already logged in " + username};
         } else {
-            var newPlayer = new Player(username, username, client.sessionId);
+            var newPlayer = new Player(username, username, client.id);
             players.push(newPlayer);
-            var data = {"sessionId": client.sessionId, "success":1,"message": "Hello there " + username};
+            var data = {"sessionId": client.id, "success":1,"message": "Hello there " + username};
         }
         callback(data);
         
@@ -57,37 +51,47 @@ io.sockets.on('connection', function (client, username) {
 
     client.on('logout', function (username, callback) {
         var deleted = false;
-        for (var player in players){
-            if (player.id = username){
-                players.splice(players.indexOf(player), 1);
-                deleted = true;
-            }
+        var loggedInAlready = isUserLoggedIn(username);
+
+        if (loggedInAlready["loggedIn"]){
+            players.splice(loggedInAlready["index"], 1);
+            deleted = true;
         }
-        if (deleted){
-            var data = {"success":1, "message": "See you soon!"};
+        
+        callback({"success":1, "message": "See you soon!"});
+        
+    });
+
+    client.on('getPlayers', function (username, callback) {
+        var loggedInAlready = isUserLoggedIn(username);
+        console.log(loggedInAlready);
+        if(loggedInAlready["loggedIn"]){
+            callback(players);
         } else {
-            var data = {"success":0, "message": "You were not logged in anyway ;)"};
+            callback("Not logged in")
         }
         
-        callback(data);
         
     });
 
-    client.on('getPlayers', function (callback) {
-        
-        callback(players);
-        
+    client.on('findGame', function (username, callback) {
+        var loggedInAlready = isUserLoggedIn(username);
+        if(loggedInAlready["loggedIn"]){
+            callback(games);
+        } else {
+            callback("Not logged in")
+        }
+
     });
 
-    client.on('findGame', function (me, username) {
-        console.log("RIGHT");
-        username("hi there");
-        // if(games.length > 1){
-        //     var listOfGames = games.toString;
-        //     socket.emit('message', listOfGames);
-        // } else {
-        //     socket.emit('message', 'There are no Games right now! Why not Create one!');
-        // }
+    client.on('findGame', function (username, callback) {
+        var loggedInAlready = isUserLoggedIn(username);
+        if(loggedInAlready["loggedIn"]){
+            callback(games);
+        } else {
+            callback("Not logged in")
+        }
+
     });
 
     client.on('joinGame', function (username, gameName) {
@@ -95,6 +99,19 @@ io.sockets.on('connection', function (client, username) {
         client.in('game').emit('message', username + 'has joined the game');
     });
 });
+
+function isUserLoggedIn(username){
+    var userInfo = {"loggedIn": false, "sessionId": null};
+    for (var i in players){
+        if (players[i].id == username){
+            userInfo["loggedIn"] = true;
+            userInfo["sessionId"] = players[i].sessionId;
+            userInfo["index"] = players.indexOf(players[i]);
+        }
+    }
+
+    return userInfo;
+}
 
 
 server.listen(port, (err) => {

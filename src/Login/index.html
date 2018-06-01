@@ -192,6 +192,8 @@ span.psw {
 <script>
 
     var sessionId = null;
+    var username = '';
+    var password = '';
     // The visitor is asked for their username...
     
     var socket = io.connect('http://localhost:3000');
@@ -201,20 +203,17 @@ span.psw {
     // A dialog box is displayed when the server sends us a "message"
     socket.on('message', function(message) {
         $('#serverMessage').text(message);
-    })
+    });
 
-    // When the button is clicked, a "message" is sent to the server
-    $('#findGames').click(function () {
-        socket.emit('findGame', username);
-    })
-
+    
     $('#login').click(function () {
-        let username = $('#username').val();
-        let password = $('#psw').val();
+        username = $('#username').val();
+        password = $('#psw').val();
+
         $('#loginModal').css('display','none');
 
         socket.emit('login', username, password, function(data){
-            
+            console.log(data["message"]);
             if (data.success == 1){
                 sessionId = data["sessionId"];
                 $('#loginBtn').css('display','none');
@@ -228,8 +227,8 @@ span.psw {
                 $('#findGames').css('display','none');
                 $('#makeGame').css('display','none');
             }
-        })
-    })
+        });
+    });
 
     $('#logout').click(function () {
         
@@ -241,15 +240,21 @@ span.psw {
             $('#findGames').css('display','none');
             $('#makeGame').css('display','none');
             
-        })
-    })
+        });
+    });
 
     $('#getPlayers').click(function () {
-        
-        socket.emit('getPlayers', function(data){
-            console.log(data);
-        })
-    })
+        socket.emit('getPlayers', username, function(data){
+            console.log("Players", data);
+        });
+    });
+
+    $('#findGames').click(function () {
+        socket.emit('findGame', username, function(data){
+            console.log("games", data);
+        });
+    });
+
 </script>
 </body>
 </html>
