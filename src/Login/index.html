@@ -133,7 +133,9 @@ span.psw {
 <button id="getPlayers" style="width:auto;">get Players</button>
 <button id="logout" style="display: none; width:auto;">Log Off</button>
 <button id="findGames" style="display: none; width:auto;">Find Game</button>
-<button id="makeGame" style="display: none; width:auto;">Create a Game</button>
+<button onclick="displayCreateGameModal()" id="makeGame" style="display: none; width:auto;">Create a Game</button>
+<button id="leaveGame" style="display: none; width:auto;">Leave the Game</button>
+
 
 <div id="loginModal" class="modal">
   
@@ -163,10 +165,32 @@ span.psw {
     </form>
 </div>
 
+<div id="gameModal" class="modal">
+  
+        <form class="modal-content animate" onsubmit="event.preventDefault()">
+            <div class="imgcontainer">
+                <span onclick="closeModal()" class="close" title="Close Modal">&times;</span>
+                <img src="img_avatar2.png" alt="Avatar" class="avatar">
+            </div>
+    
+            <div class="container">
+                <label for="gname"><b>Game Name</b></label>
+                <input type="text" placeholder="Enter Username" name="gname" id="gname" required>
+    
+                <label for="gsize"><b>Size of Game</b></label>
+                <input type="number" placeholder="4" name="gsize" id="gsize" required>
+                
+                <button type="submit" id="game">Create</button>
+                
+            </div>
+        </form>
+    </div>
+
 <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
 <script>
 
     var modal = $('#loginModal');
+    var gameModal = $('#gameModal');
     
     function displayModal(){
         
@@ -174,15 +198,24 @@ span.psw {
         return true;
     }
 
+    function displayCreateGameModal(){
+        gameModal.css('display','block');
+        return true;
+    }
+
     function closeModal(){
-        
         modal.css('display','none');
+        gameModal.css('display','none');
         return true;
     }
 
     // When the user clicks anywhere outside of the modal, close it
     window.onclick = function(event) {
         if (event.target == modal) {
+            closeModal();
+        }
+
+        if (event.target == gameModal) {
             closeModal();
         }
        
@@ -230,6 +263,33 @@ span.psw {
         });
     });
 
+    $('#game').click(function () {
+        gameName = $('#gname').val();
+        gameSize = $('#gsize').val();
+
+        $('#gameModal').css('display','none');
+
+        socket.emit('createGame', username, gameSize, gameName, function(data){
+            console.log(data);
+            if (data.success){
+                
+                $('#loginBtn').css('display','none');
+                $('#logout').css('display','block');
+                $('#findGames').css('display','none');
+                $('#makeGame').css('display','none');
+                $('leaveGame').css('display','block');
+
+                
+            } else {
+                $('#loginBtn').css('display','none');
+                $('#logout').css('display','block');
+                $('#findGames').css('display','block');
+                $('#makeGame').css('display','block');
+                $('leaveGame').css('display','none');
+            }
+        });
+    });
+
     $('#logout').click(function () {
         
         socket.emit('logout', username, function(data){
@@ -239,6 +299,7 @@ span.psw {
             $('#logout').css('display','none');
             $('#findGames').css('display','none');
             $('#makeGame').css('display','none');
+            $('leaveGame').css('display','none');
             
         });
     });

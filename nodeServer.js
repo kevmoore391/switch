@@ -84,10 +84,20 @@ io.sockets.on('connection', function (client, username) {
 
     });
 
-    client.on('findGame', function (username, callback) {
+    client.on('createGame', function (username, size, gameName, callback) {
         var loggedInAlready = isUserLoggedIn(username);
         if(loggedInAlready["loggedIn"]){
-            callback(games);
+            var data = {"success": false, "players": {}};
+            var success = createGame(username, size, gameName);
+            
+            if (success){
+                var success2 = joinGame(gameName);
+                var playersObject = getGamePlayers(gameName);
+                data["gameCreated"] = success;
+                data["gameJoined"] = success2;
+                data["players"] = playersObject;
+            }
+            callback(data);
         } else {
             callback("Not logged in")
         }
@@ -95,22 +105,155 @@ io.sockets.on('connection', function (client, username) {
     });
 
     client.on('joinGame', function (username, gameName) {
-        client.join(gameName);
-        client.in('game').emit('message', username + 'has joined the game');
+        
+        var loggedInAlready = isUserLoggedIn(username);
+        if(loggedInAlready["loggedIn"]){
+            var data = {"success": false, "players": {}};
+            var success = joinGame(gameName);
+            if(success){
+                
+                var playersObject = getGamePlayers(gameName);
+                data["success"] = success;
+                data["players"] = playersObject;
+                client.join(gameName);
+                client.in(gameName).emit('message', username + 'has joined the game');
+            }
+            
+            callback(success);
+        } else {
+            callback("Not logged in")
+        }
+    });
+
+    client.on('leaveGame', function (username, gameName) {
+        
+        var loggedInAlready = isUserLoggedIn(username);
+        var userInGame = isUserInGame(username, gameName);
+        var success = false;
+
+        if(loggedInAlready["loggedIn"]){
+            
+            if(userInGame){
+                leaveGame(username, gameName);
+                client.leave(gameName);
+                client.in(gameName).emit('PlayerLeft', username + 'has left the game');
+            }
+            
+            callback(success);
+        } else {
+            callback("Not logged in");
+        }
     });
 });
 
 function isUserLoggedIn(username){
     var userInfo = {"loggedIn": false, "sessionId": null};
-    for (var i in players){
-        if (players[i].id == username){
-            userInfo["loggedIn"] = true;
-            userInfo["sessionId"] = players[i].sessionId;
-            userInfo["index"] = players.indexOf(players[i]);
+    player = findParticularPlayer(username);
+    if (player) {
+        userInfo["loggedIn"] = true;
+        userInfo["sessionId"] = player.sessionId;
+        userInfo["index"] = players.indexOf(player);
+    }
+    
+    return userInfo;
+}
+
+function createGame(username, size, name){
+    var success = false;
+    try {
+        try {
+            var newGame = new Game(name, size, username);
+            games.push(newGame);
+            success = true;
+        } catch(e){
+            console.log(e);
+            success = false;
+        }
+    } catch(e){
+        console.log(e);
+        success = false;
+    }
+    return success;
+}
+
+function deleteGame(name){
+    var success = false
+    game = findParticularGame(name);
+    if(game){
+        try {
+            players.splice(loggedInAlready["index"], 1);
+            games.splice(games.indexOf(game), 1);
+            success = true;
+        } catch(e){
+            console.log(e);
+            success = false;
         }
     }
+    return success;
+}
 
-    return userInfo;
+function leaveGame(username, name){
+    var success = false
+    game = findParticularGame(name);
+    player = findParticularPlayer(username);
+    if(game && player){
+        try {
+            game.leaveGame(player);
+            success = true;
+        } catch(e){
+            console.log(e);
+            success = false;
+        }
+        
+    } 
+        
+    return success;
+}
+
+function joinGame(username, name){
+    var success = false;
+    game = findParticularGame(name);
+    player = findParticularPlayer(username);
+    if(game && player){
+        game.players.addPlayers(player);
+        success = true;
+    }
+    return success;
+}
+
+
+function getGamePlayers(name){
+    
+    players = [];
+    game = findParticularGame(name);
+    if(game){
+        for (var i in game.players){
+            players.push(game.players[i].id);
+        }
+    }
+    return players;
+}
+
+function findParticularGame(name){
+    
+    game = null;
+    for (var o in games){
+        if (games[o].name == name){
+            game = games[o];
+        }
+    }
+    return game;
+}
+
+function findParticularPlayer(username){
+    
+    var player;
+    for (var i in players){
+        if (players[i].id == username){
+            player = players[i];
+        }
+    }
+    return player;
 }
 
 
