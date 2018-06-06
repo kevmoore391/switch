@@ -134,8 +134,11 @@ span.psw {
 <button id="logout" style="display: none; width:auto;">Log Off</button>
 <button id="findGames" style="display: none; width:auto;">Find Game</button>
 <button onclick="displayCreateGameModal()" id="makeGame" style="display: none; width:auto;">Create a Game</button>
+<button onclick="displayJoinGameModal()" id="joinGame" style="display: none; width:auto;">Join A Game</button>
 <button id="leaveGame" style="display: none; width:auto;">Leave the Game</button>
+<button id="gameInfo" style="display: none; width:auto;">Get Game Information</button>
 
+<div id="servermessage"></div>
 
 <div id="loginModal" class="modal">
   
@@ -167,6 +170,27 @@ span.psw {
 
 <div id="gameModal" class="modal">
   
+    <form class="modal-content animate" onsubmit="event.preventDefault()">
+        <div class="imgcontainer">
+            <span onclick="closeModal()" class="close" title="Close Modal">&times;</span>
+            <img src="img_avatar2.png" alt="Avatar" class="avatar">
+        </div>
+
+        <div class="container">
+            <label for="gname"><b>Game Name</b></label>
+            <input type="text" placeholder="Enter Username" name="gname" id="gname" required>
+
+            <label for="gsize"><b>Size of Game</b></label>
+            <input type="number" placeholder="4" name="gsize" id="gsize" required>
+            
+            <button type="submit" id="game">Create</button>
+            
+        </div>
+    </form>
+</div>
+
+<div id="joinModal" class="modal">
+  
         <form class="modal-content animate" onsubmit="event.preventDefault()">
             <div class="imgcontainer">
                 <span onclick="closeModal()" class="close" title="Close Modal">&times;</span>
@@ -174,13 +198,11 @@ span.psw {
             </div>
     
             <div class="container">
-                <label for="gname"><b>Game Name</b></label>
-                <input type="text" placeholder="Enter Username" name="gname" id="gname" required>
+                <div id="gameList">t</div>
+                <label for="jname"><b>Game Name</b></label>
+                <input type="text" placeholder="Game Name" name="jname" id="jname" required>
     
-                <label for="gsize"><b>Size of Game</b></label>
-                <input type="number" placeholder="4" name="gsize" id="gsize" required>
-                
-                <button type="submit" id="game">Create</button>
+                <button type="submit" id="join">Create</button>
                 
             </div>
         </form>
@@ -191,7 +213,8 @@ span.psw {
 
     var modal = $('#loginModal');
     var gameModal = $('#gameModal');
-    
+    var joinModal = $('#joinModal');
+
     function displayModal(){
         
         modal.css('display','block');
@@ -203,9 +226,17 @@ span.psw {
         return true;
     }
 
+    function displayJoinGameModal(){
+        var gameList = findGames();
+        $('#gameList').text(gameList);
+        joinModal.css('display','block');
+        return true;
+    }
+
     function closeModal(){
         modal.css('display','none');
         gameModal.css('display','none');
+        joinModal.css('display','none');
         return true;
     }
 
@@ -253,12 +284,17 @@ span.psw {
                 $('#logout').css('display','block');
                 $('#findGames').css('display','block');
                 $('#makeGame').css('display','block');
-
+                $('#leaveGame').css('display','none');
+                $('#joinGame').css('display', 'block');
+                $('#gameInfo').css('display', 'none');
             } else {
                 $('#loginBtn').css('display','block');
                 $('#logout').css('display','none');
                 $('#findGames').css('display','none');
                 $('#makeGame').css('display','none');
+                $('#leaveGame').css('display','none');
+                $('#joinGame').css('display', 'none');
+                $('#gameInfo').css('display', 'none');
             }
         });
     });
@@ -266,26 +302,60 @@ span.psw {
     $('#game').click(function () {
         gameName = $('#gname').val();
         gameSize = $('#gsize').val();
-
+        if (gameSize == '' || gameSize == 0 || gameSize == null) {
+            gameSize = 4;
+        }
         $('#gameModal').css('display','none');
 
         socket.emit('createGame', username, gameSize, gameName, function(data){
             console.log(data);
-            if (data.success){
+            if ((data["gameCreated"]) && (data["gameJoined"])){
                 
                 $('#loginBtn').css('display','none');
                 $('#logout').css('display','block');
                 $('#findGames').css('display','none');
                 $('#makeGame').css('display','none');
-                $('leaveGame').css('display','block');
-
+                $('#leaveGame').css('display','block');
+                $('#joinGame').css('display', 'none');
+                $('#gameInfo').css('display', 'block');
                 
             } else {
                 $('#loginBtn').css('display','none');
                 $('#logout').css('display','block');
                 $('#findGames').css('display','block');
                 $('#makeGame').css('display','block');
-                $('leaveGame').css('display','none');
+                $('#leaveGame').css('display','none');
+                $('#joinGame').css('display', 'block');
+                $('#gameInfo').css('display', 'none');
+            }
+        });
+    });
+
+    $('#join').click(function () {
+        var gameName = $('#jname').val();
+
+        $('#joinModal').css('display','none');
+
+        socket.emit('joinGame', username, gameName, function(data){
+            console.log(data);
+            if (data["gameJoined"]){
+                
+                $('#loginBtn').css('display','none');
+                $('#logout').css('display','block');
+                $('#findGames').css('display','none');
+                $('#makeGame').css('display','none');
+                $('#leaveGame').css('display','block');
+                $('#joinGame').css('display', 'none');
+                $('#gameInfo').css('display', 'block');
+                
+            } else {
+                $('#loginBtn').css('display','none');
+                $('#logout').css('display','block');
+                $('#findGames').css('display','block');
+                $('#makeGame').css('display','block');
+                $('#leaveGame').css('display','none');
+                $('#joinGame').css('display', 'block');
+                $('#gameInfo').css('display', 'none');
             }
         });
     });
@@ -299,22 +369,38 @@ span.psw {
             $('#logout').css('display','none');
             $('#findGames').css('display','none');
             $('#makeGame').css('display','none');
-            $('leaveGame').css('display','none');
-            
+            $('#leaveGame').css('display','none');
+            $('#joinGame').css('display', 'none');
+            $('#gameInfo').css('display', 'none');
+        });
+    });
+
+    $('#gameInfo').click(function () {
+        socket.emit('getGameInfo', username, function(data){
+            console.log("game Info: ", data);
         });
     });
 
     $('#getPlayers').click(function () {
         socket.emit('getPlayers', username, function(data){
-            console.log("Players", data);
+            console.log("Players: ", data);
         });
     });
 
     $('#findGames').click(function () {
         socket.emit('findGame', username, function(data){
-            console.log("games", data);
+            console.log(data);
         });
+        
     });
+
+    function findGames(){
+        var theData = [];
+        socket.emit('findGame', username, function(data){
+            this.theData = data;
+        });
+        return theData;
+    }
 
 </script>
 </body>

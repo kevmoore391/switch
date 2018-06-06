@@ -1,8 +1,8 @@
 function Game (name, limit, creator) {
-    this.name = name.charAt(0).toUpperCase() + name.slice(1);
+    this.name = name;
     this.limit = limit;
     this.creator = creator;
-    this.players = [];
+    this.gamePlayers = [];
     this.playersTurn = null;
     this.gameOver = false;
     this.started = false;
@@ -12,16 +12,11 @@ function Game (name, limit, creator) {
     this.getPlayers = function() {
         return this.players;
     };
-    this.addPlayers = function(player) {
-        this.players.push(player);
+    this.addPlayer = function(player) {
+        this.gamePlayers.push(player);
     };
     this.leaveGame = function(player) {
-        for (var i in this.players){
-        if (this.players[i].id == player.id){
-            this.players.splice(this.players.indexOf(this.players[i]), 1);
-        }
-    }
-        this.players.remo(player);
+        this.players.splice(this.players.indexOf(player), 1);
     };
     this.setWhosTurn = function(player) {
         this.playersTurn = username;

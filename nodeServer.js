@@ -52,25 +52,21 @@ io.sockets.on('connection', function (client, username) {
     client.on('logout', function (username, callback) {
         var deleted = false;
         var loggedInAlready = isUserLoggedIn(username);
-
         if (loggedInAlready["loggedIn"]){
             players.splice(loggedInAlready["index"], 1);
             deleted = true;
         }
-        
-        callback({"success":1, "message": "See you soon!"});
+        callback({"status":"See you soon", "error": 0});
         
     });
 
     client.on('getPlayers', function (username, callback) {
         var loggedInAlready = isUserLoggedIn(username);
-        console.log(loggedInAlready);
         if(loggedInAlready["loggedIn"]){
             callback(players);
         } else {
-            callback("Not logged in")
+            callback({"status":"Not logged in", "error": 2})
         }
-        
         
     });
 
@@ -79,7 +75,7 @@ io.sockets.on('connection', function (client, username) {
         if(loggedInAlready["loggedIn"]){
             callback(games);
         } else {
-            callback("Not logged in")
+            callback({"status":"Not logged in", "error": 2})
         }
 
     });
@@ -87,11 +83,10 @@ io.sockets.on('connection', function (client, username) {
     client.on('createGame', function (username, size, gameName, callback) {
         var loggedInAlready = isUserLoggedIn(username);
         if(loggedInAlready["loggedIn"]){
-            var data = {"success": false, "players": {}};
+            var data = {"gameJoined": false, "gameCreated": false};
             var success = createGame(username, size, gameName);
-            
             if (success){
-                var success2 = joinGame(gameName);
+                var success2 = joinGame(username, gameName);
                 var playersObject = getGamePlayers(gameName);
                 data["gameCreated"] = success;
                 data["gameJoined"] = success2;
@@ -99,29 +94,29 @@ io.sockets.on('connection', function (client, username) {
             }
             callback(data);
         } else {
-            callback("Not logged in")
+            callback({"status":"Not logged in", "error": 2})
         }
 
     });
 
-    client.on('joinGame', function (username, gameName) {
+    client.on('joinGame', function (username, gameName, callback) {
         
         var loggedInAlready = isUserLoggedIn(username);
         if(loggedInAlready["loggedIn"]){
-            var data = {"success": false, "players": {}};
-            var success = joinGame(gameName);
+            var data = {"gameJoined": false};
+            var success = joinGame(username, gameName);
             if(success){
                 
                 var playersObject = getGamePlayers(gameName);
-                data["success"] = success;
+                data["gameJoined"] = success;
                 data["players"] = playersObject;
                 client.join(gameName);
                 client.in(gameName).emit('message', username + 'has joined the game');
             }
             
-            callback(success);
+            callback(data);
         } else {
-            callback("Not logged in")
+            callback({"status":"Not logged in", "error": 2})
         }
     });
 
@@ -129,7 +124,7 @@ io.sockets.on('connection', function (client, username) {
         
         var loggedInAlready = isUserLoggedIn(username);
         var userInGame = isUserInGame(username, gameName);
-        var success = false;
+        var data = {"gameLeft": false};
 
         if(loggedInAlready["loggedIn"]){
             
@@ -137,22 +132,37 @@ io.sockets.on('connection', function (client, username) {
                 leaveGame(username, gameName);
                 client.leave(gameName);
                 client.in(gameName).emit('PlayerLeft', username + 'has left the game');
+                data["gameLeft"] = true;
             }
             
-            callback(success);
+            callback(data);
         } else {
-            callback("Not logged in");
+            callback({"status":"Not logged in", "error": 2});
+        }
+    });
+
+    client.on('getGameInfo', function (username, callback) {
+        
+        var loggedInAlready = isUserLoggedIn(username);
+        if(loggedInAlready["loggedIn"]){
+           
+            var gameInfo = getCurrentGameInfo(username);
+            
+            callback(gameInfo);
+        } else {
+            callback({"status":"Not logged in", "error": 2})
         }
     });
 });
 
 function isUserLoggedIn(username){
     var userInfo = {"loggedIn": false, "sessionId": null};
-    player = findParticularPlayer(username);
-    if (player) {
+    var thePlayer = findParticularPlayer(username);
+
+    if (thePlayer) {
         userInfo["loggedIn"] = true;
-        userInfo["sessionId"] = player.sessionId;
-        userInfo["index"] = players.indexOf(player);
+        userInfo["sessionId"] = thePlayer.sessionId;
+        userInfo["index"] = players.indexOf(thePlayer);
     }
     
     return userInfo;
@@ -161,14 +171,9 @@ function isUserLoggedIn(username){
 function createGame(username, size, name){
     var success = false;
     try {
-        try {
-            var newGame = new Game(name, size, username);
-            games.push(newGame);
-            success = true;
-        } catch(e){
-            console.log(e);
-            success = false;
-        }
+        var newGame = new Game(name, size, username);
+        games.push(newGame);
+        success = true;
     } catch(e){
         console.log(e);
         success = false;
@@ -178,10 +183,9 @@ function createGame(username, size, name){
 
 function deleteGame(name){
     var success = false
-    game = findParticularGame(name);
-    if(game){
+    var theGame = findParticularGame(name);
+    if(theGame){
         try {
-            players.splice(loggedInAlready["index"], 1);
             games.splice(games.indexOf(game), 1);
             success = true;
         } catch(e){
@@ -194,11 +198,12 @@ function deleteGame(name){
 
 function leaveGame(username, name){
     var success = false
-    game = findParticularGame(name);
-    player = findParticularPlayer(username);
-    if(game && player){
+    var theGame = findParticularGame(name);
+    var thePlayer = findParticularPlayer(username);
+    if(theGame && thePlayer){
         try {
-            game.leaveGame(player);
+            theGame.leaveGame(thePlayer);
+            thePlayer.currentGame == null
             success = true;
         } catch(e){
             console.log(e);
@@ -212,11 +217,14 @@ function leaveGame(username, name){
 
 function joinGame(username, name){
     var success = false;
-    game = findParticularGame(name);
-    player = findParticularPlayer(username);
-    if(game && player){
-        game.players.addPlayers(player);
-        success = true;
+    var theGame = findParticularGame(name);
+    var thePlayer = findParticularPlayer(username);
+    if((theGame) && (thePlayer)){
+        if ((theGame.limit > theGame.gamePlayers.length) && thePlayer.currentGame == null){
+            theGame.addPlayer(thePlayer);
+            thePlayer.inGame(theGame.name);
+            success = true;
+        }
     }
     return success;
 }
@@ -224,36 +232,47 @@ function joinGame(username, name){
 
 function getGamePlayers(name){
     
-    players = [];
-    game = findParticularGame(name);
-    if(game){
-        for (var i in game.players){
-            players.push(game.players[i].id);
+    var playersInThisGame = [];
+    var theGame = findParticularGame(name);
+    if(theGame){
+        for (var i in theGame.gamePlayers){
+            playersInThisGame.push(theGame.gamePlayers[i].id);
         }
     }
-    return players;
+    return playersInThisGame;
 }
 
 function findParticularGame(name){
     
-    game = null;
+    var theGame = null;
+    
     for (var o in games){
         if (games[o].name == name){
-            game = games[o];
+            theGame = games[o];
         }
     }
-    return game;
+    return theGame;
 }
 
 function findParticularPlayer(username){
     
-    var player;
+    var thePlayer = null;
     for (var i in players){
         if (players[i].id == username){
-            player = players[i];
+            thePlayer = players[i];
         }
     }
-    return player;
+    return thePlayer;
+}
+
+function getCurrentGameInfo(username){
+    var theGame = {};
+    var thePlayer = findParticularPlayer(username);
+    if(thePlayer){
+        theGame = findParticularGame(thePlayer.currentGame);
+    }    
+    
+    return theGame;
 }
 
 
