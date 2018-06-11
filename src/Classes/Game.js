@@ -16,7 +16,7 @@ function Game (name, limit, creator) {
         this.gamePlayers.push(player);
     };
     this.leaveGame = function(player) {
-        this.players.splice(this.players.indexOf(player), 1);
+        this.players.splice(this.gamePlayers.indexOf(player), 1);
     };
     this.setWhosTurn = function(player) {
         this.playersTurn = username;

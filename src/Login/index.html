@@ -137,6 +137,7 @@ span.psw {
 <button onclick="displayJoinGameModal()" id="joinGame" style="display: none; width:auto;">Join A Game</button>
 <button id="leaveGame" style="display: none; width:auto;">Leave the Game</button>
 <button id="gameInfo" style="display: none; width:auto;">Get Game Information</button>
+<button id="move" style="display: none; width:auto;" disabled>Make a move</button>
 
 <div id="servermessage"></div>
 
@@ -181,7 +182,7 @@ span.psw {
             <input type="text" placeholder="Enter Username" name="gname" id="gname" required>
 
             <label for="gsize"><b>Size of Game</b></label>
-            <input type="number" placeholder="4" name="gsize" id="gsize" required>
+            <input type="number" value="4" name="gsize" id="gsize" required>
             
             <button type="submit" id="game">Create</button>
             
@@ -198,7 +199,7 @@ span.psw {
             </div>
     
             <div class="container">
-                <div id="gameList">t</div>
+                <div id="gameList"></div>
                 <label for="jname"><b>Game Name</b></label>
                 <input type="text" placeholder="Game Name" name="jname" id="jname" required>
     
@@ -209,6 +210,11 @@ span.psw {
     </div>
 
 <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script>
+
+    
+</script>
+<script src="/socket.io/socket.io.js"></script>
 <script>
 
     var modal = $('#loginModal');
@@ -227,8 +233,7 @@ span.psw {
     }
 
     function displayJoinGameModal(){
-        var gameList = findGames();
-        $('#gameList').text(gameList);
+        findGames();
         joinModal.css('display','block');
         return true;
     }
@@ -251,13 +256,13 @@ span.psw {
         }
        
     }
-</script>
-<script src="/socket.io/socket.io.js"></script>
-<script>
+
+    //----------------------------------------------------------------------------------------------------------------------------//
 
     var sessionId = null;
     var username = '';
     var password = '';
+    var myGame = '';
     // The visitor is asked for their username...
     
     var socket = io.connect('http://localhost:3000');
@@ -266,7 +271,7 @@ span.psw {
 
     // A dialog box is displayed when the server sends us a "message"
     socket.on('message', function(message) {
-        $('#serverMessage').text(message);
+        console.log(message);
     });
 
     
@@ -287,14 +292,9 @@ span.psw {
                 $('#leaveGame').css('display','none');
                 $('#joinGame').css('display', 'block');
                 $('#gameInfo').css('display', 'none');
+                $('#move').css('display', 'none');
             } else {
-                $('#loginBtn').css('display','block');
-                $('#logout').css('display','none');
-                $('#findGames').css('display','none');
-                $('#makeGame').css('display','none');
-                $('#leaveGame').css('display','none');
-                $('#joinGame').css('display', 'none');
-                $('#gameInfo').css('display', 'none');
+                notLoggedIn();
             }
         });
     });
@@ -312,13 +312,14 @@ span.psw {
             if ((data["gameCreated"]) && (data["gameJoined"])){
                 
                 $('#loginBtn').css('display','none');
-                $('#logout').css('display','block');
+                $('#logout').css('display','none');
                 $('#findGames').css('display','none');
                 $('#makeGame').css('display','none');
                 $('#leaveGame').css('display','block');
                 $('#joinGame').css('display', 'none');
                 $('#gameInfo').css('display', 'block');
-                
+                $('#move').css('display', 'none');
+                myGame = gameName;
             } else {
                 $('#loginBtn').css('display','none');
                 $('#logout').css('display','block');
@@ -327,6 +328,12 @@ span.psw {
                 $('#leaveGame').css('display','none');
                 $('#joinGame').css('display', 'block');
                 $('#gameInfo').css('display', 'none');
+                $('#move').css('display', 'none');
+                myGame = '';
+            }
+
+            if (data["error"] == 2){
+                notLoggedIn();
             }
         });
     });
@@ -337,17 +344,18 @@ span.psw {
         $('#joinModal').css('display','none');
 
         socket.emit('joinGame', username, gameName, function(data){
-            console.log(data);
+            console.log(client);
             if (data["gameJoined"]){
                 
                 $('#loginBtn').css('display','none');
-                $('#logout').css('display','block');
+                $('#logout').css('display','none');
                 $('#findGames').css('display','none');
                 $('#makeGame').css('display','none');
                 $('#leaveGame').css('display','block');
                 $('#joinGame').css('display', 'none');
                 $('#gameInfo').css('display', 'block');
-                
+                $('#move').css('display', 'none');
+                myGame = gameName;
             } else {
                 $('#loginBtn').css('display','none');
                 $('#logout').css('display','block');
@@ -356,6 +364,38 @@ span.psw {
                 $('#leaveGame').css('display','none');
                 $('#joinGame').css('display', 'block');
                 $('#gameInfo').css('display', 'none');
+                $('#move').css('display', 'none');
+                myGame = '';
+            }
+
+            if (data["error"] == 2){
+                notLoggedIn();
+            }
+        });
+    });
+
+    $('#leaveGame').click(function () {
+
+        $('#joinModal').css('display','none');
+
+        socket.emit('leaveGame', username, function(data){
+            console.log(data);
+            if (data["gameLeft"]){
+                
+                leaveGame();
+            } else {
+                $('#loginBtn').css('display','none');
+                $('#logout').css('display','none');
+                $('#findGames').css('display','none');
+                $('#makeGame').css('display','none');
+                $('#leaveGame').css('display','block');
+                $('#joinGame').css('display', 'none');
+                $('#gameInfo').css('display', 'block');
+                $('#move').css('display', 'none');
+            }
+
+            if (data[error] == 2){
+                notLoggedIn();
             }
         });
     });
@@ -363,43 +403,134 @@ span.psw {
     $('#logout').click(function () {
         
         socket.emit('logout', username, function(data){
-            console.log(data["message"]);
+           console.log(data);
             
-            $('#loginBtn').css('display','block');
-            $('#logout').css('display','none');
-            $('#findGames').css('display','none');
-            $('#makeGame').css('display','none');
-            $('#leaveGame').css('display','none');
-            $('#joinGame').css('display', 'none');
-            $('#gameInfo').css('display', 'none');
+            if (data["success"]){
+                $('#loginBtn').css('display','block');
+                $('#logout').css('display','none');
+                $('#findGames').css('display','none');
+                $('#makeGame').css('display','none');
+                $('#leaveGame').css('display','none');
+                $('#joinGame').css('display', 'none');
+                $('#gameInfo').css('display', 'none');
+                $('#move').css('display', 'none');
+            } else {
+                console.log(data["status"]);
+                $('#loginBtn').css('display','none');
+                $('#logout').css('display','block');
+                $('#findGames').css('display','block');
+                $('#makeGame').css('display','block');
+                $('#leaveGame').css('display','none');
+                $('#joinGame').css('display', 'block');
+                $('#gameInfo').css('display', 'none');
+                $('#move').css('display', 'none');
+            }
+
+            if (data["error"] == 2){
+                notLoggedIn();
+            }
         });
+    });
+
+    socket.on('GameHasStarted', function(data) {
+        $('#move').css('display', 'block');
+        $('#move').attr("disabled", "disabled");
+        console.log(data);
+    });
+
+    socket.on('Yourturn', function(data) {
+        $('#move').attr("disabled", "");
+        console.log(data);
+    });
+
+    $('#move').click(function () {
+        var move = 1;
+        socket.emit('makeMyMove', username, myGame, move, function(data){
+
+            if (data["error"] == 1){
+                console.log("your not in this game!!");
+            }
+            if (data["error"] == 2){
+                notLoggedIn();
+            }
+        });
+
+    });
+
+    socket.on('GameOver', function(data) {
+        $('#move').css('display', 'block');
+        $('#move').attr("disabled", "disabled");
+        console.log(data);
+    });
+
+    $('#ReturnToLobby').click(function () {
+        $('#loginBtn').css('display','none');
+        $('#logout').css('display','block');
+        $('#findGames').css('display','block');
+        $('#makeGame').css('display','block');
+        $('#leaveGame').css('display','none');
+        $('#joinGame').css('display', 'block');
+        $('#gameInfo').css('display', 'none');
+        $('#move').css('display', 'none');
+        $('#move').attr("disabled", "disabled");
+
     });
 
     $('#gameInfo').click(function () {
         socket.emit('getGameInfo', username, function(data){
-            console.log("game Info: ", data);
+            if (data["error"] == 2){
+                notLoggedIn();
+            }
         });
     });
 
     $('#getPlayers').click(function () {
         socket.emit('getPlayers', username, function(data){
             console.log("Players: ", data);
+            if (data["error"] == 2){
+                notLoggedIn();
+            }
         });
     });
 
     $('#findGames').click(function () {
         socket.emit('findGame', username, function(data){
             console.log(data);
+            if (data["error"] == 2){
+                notLoggedIn();
+            }
         });
         
     });
 
+    function leaveGame(){
+        $('#loginBtn').css('display','none');
+        $('#logout').css('display','block');
+        $('#findGames').css('display','block');
+        $('#makeGame').css('display','block');
+        $('#leaveGame').css('display','none');
+        $('#joinGame').css('display', 'block');
+        $('#gameInfo').css('display', 'none');
+        $('#move').css('display', 'none');
+        myGame = '';
+    }
+    function notLoggedIn(){
+        $('#loginBtn').css('display','block');
+        $('#logout').css('display','none');
+        $('#findGames').css('display','none');
+        $('#makeGame').css('display','none');
+        $('#leaveGame').css('display','none');
+        $('#joinGame').css('display', 'none');
+        $('#gameInfo').css('display', 'none');
+        $('#move').css('display', 'none');
+    }
     function findGames(){
-        var theData = [];
         socket.emit('findGame', username, function(data){
-            this.theData = data;
+            $('#gameList').html();
+            for(i in data){
+                $('#gameList').append('<p>' + data[i].name + '</p>');
+            }
         });
-        return theData;
     }
 
 </script>

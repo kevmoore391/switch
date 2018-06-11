@@ -19,8 +19,8 @@ var server = http.createServer(function(req, res) {
 // Loading socket.io
 var io = require('socket.io').listen(server);
 
-io.sockets.on('connection', function (client, username) {
-    
+io.sockets.on('connection', function (client) {
+    client.emit('message', "O_O");
    
     // The other clients are told that someone new has arrived
     client.send('You have just connected, Welcome!');
@@ -51,12 +51,21 @@ io.sockets.on('connection', function (client, username) {
 
     client.on('logout', function (username, callback) {
         var deleted = false;
+        data = {};
         var loggedInAlready = isUserLoggedIn(username);
         if (loggedInAlready["loggedIn"]){
-            players.splice(loggedInAlready["index"], 1);
-            deleted = true;
+            deleted = logout(username, loggedInAlready["index"]);
+            
         }
-        callback({"status":"See you soon", "error": 0});
+        if (deleted){
+            data["status"] = "See you soon";
+            data["error"] = 0;
+        } else {
+            data["status"] = "Uh Oh!, you aint goin nowhere!";
+            data["error"] = 1;
+        }
+        data["success"] = deleted;
+        callback(data);
         
     });
 
@@ -86,6 +95,10 @@ io.sockets.on('connection', function (client, username) {
             var data = {"gameJoined": false, "gameCreated": false};
             var success = createGame(username, size, gameName);
             if (success){
+                client.join(gameName, function(){
+                    io.to(gameName).emit(username + 'has joined the game');
+                });
+                console.log(client.rooms);
                 var success2 = joinGame(username, gameName);
                 var playersObject = getGamePlayers(gameName);
                 data["gameCreated"] = success;
@@ -110,8 +123,11 @@ io.sockets.on('connection', function (client, username) {
                 var playersObject = getGamePlayers(gameName);
                 data["gameJoined"] = success;
                 data["players"] = playersObject;
-                client.join(gameName);
-                client.in(gameName).emit('message', username + 'has joined the game');
+                client.join(gameName, function(){
+                    io.to(gameName).emit(username + 'has joined the game');
+                });
+                console.log(client.rooms);
+                
             }
             
             callback(data);
@@ -120,18 +136,18 @@ io.sockets.on('connection', function (client, username) {
         }
     });
 
-    client.on('leaveGame', function (username, gameName) {
+    client.on('leaveGame', function (username, callback) {
         
         var loggedInAlready = isUserLoggedIn(username);
-        var userInGame = isUserInGame(username, gameName);
         var data = {"gameLeft": false};
-
         if(loggedInAlready["loggedIn"]){
+            var thePlayer = findParticularPlayer(username);
             
-            if(userInGame){
-                leaveGame(username, gameName);
-                client.leave(gameName);
-                client.in(gameName).emit('PlayerLeft', username + 'has left the game');
+            if(thePlayer.currentGame != null){
+                client.leave(thePlayer.currentGame);
+                client.in(thePlayer.currentGame).emit('message', username + 'has left the game');
+                leaveGame(username, thePlayer.currentGame);
+                
                 data["gameLeft"] = true;
             }
             
@@ -168,6 +184,23 @@ function isUserLoggedIn(username){
     return userInfo;
 }
 
+function logout(username, index){
+    var success = false;
+    var thePlayer = findParticularPlayer(username);
+    
+    if(thePlayer.currentGame != null){
+        leaveGame(username, thePlayer.currentGame);
+    }
+
+    players.splice(index, 1);
+
+    var thePlayer = findParticularPlayer(username);
+    if(!thePlayer){
+        deleted = true;
+    }
+    return deleted;
+}
+
 function createGame(username, size, name){
     var success = false;
     try {
@@ -186,7 +219,7 @@ function deleteGame(name){
     var theGame = findParticularGame(name);
     if(theGame){
         try {
-            games.splice(games.indexOf(game), 1);
+            games.splice(games.indexOf(theGame), 1);
             success = true;
         } catch(e){
             console.log(e);
@@ -197,14 +230,22 @@ function deleteGame(name){
 }
 
 function leaveGame(username, name){
+    
     var success = false
     var theGame = findParticularGame(name);
     var thePlayer = findParticularPlayer(username);
-    if(theGame && thePlayer){
+    // console.log('were here',theGame);
+    if((theGame) && (thePlayer)){
+        
         try {
-            theGame.leaveGame(thePlayer);
-            thePlayer.currentGame == null
+            theGame.gamePlayers.splice(theGame.gamePlayers.indexOf(thePlayer), 1);
+            thePlayer.currentGame = null
             success = true;
+            var isTheGameEmpty = isGameEmpty(name);
+            if(isTheGameEmpty){
+                deleteGame(name);
+            }
+
         } catch(e){
             console.log(e);
             success = false;
@@ -273,6 +314,28 @@ function getCurrentGameInfo(username){
     }    
     
     return theGame;
+}
+
+function isUserInGame(username){
+    var userInGame = true;
+    var thePlayer = findParticularPlayer(username);
+    if(thePlayer.currentGame == null){
+        userInGame = false;
+    }    
+    
+    return userInGame;
+}
+
+function isGameEmpty(game){
+    var gameEmpty = false;
+    var theGame = findParticularGame(game);
+    if(theGame){
+        var playersInGame = theGame.gamePlayers.length
+        if(playersInGame ==0){
+            gameEmpty = true;
+        }
+    }
+    return gameEmpty;
 }
 
 
