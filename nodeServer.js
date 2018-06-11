@@ -113,10 +113,10 @@ io.sockets.on('connection', function (client) {
     });
 
     client.on('joinGame', function (username, gameName, callback) {
-        
+        var data = {"gameJoined": false, "error": 0, "status":"all good"};
         var loggedInAlready = isUserLoggedIn(username);
         if(loggedInAlready["loggedIn"]){
-            var data = {"gameJoined": false};
+            
             var success = joinGame(username, gameName);
             if(success){
                 
@@ -124,7 +124,7 @@ io.sockets.on('connection', function (client) {
                 data["gameJoined"] = success;
                 data["players"] = playersObject;
                 client.join(gameName, function(){
-                    io.to(gameName).emit(username + 'has joined the game');
+                    io.sockets.in(gameName).emit('message', username + " has joined the game");
                 });
                 console.log(client.rooms);
                 
@@ -132,14 +132,16 @@ io.sockets.on('connection', function (client) {
             
             callback(data);
         } else {
-            callback({"status":"Not logged in", "error": 2})
+            data["error"] = 2;
+            data["Not logged in"] = 2;
+            callback(data);
         }
     });
 
     client.on('leaveGame', function (username, callback) {
-        
+        var data = {"gameLeft": false, "error": 0};
         var loggedInAlready = isUserLoggedIn(username);
-        var data = {"gameLeft": false};
+        
         if(loggedInAlready["loggedIn"]){
             var thePlayer = findParticularPlayer(username);
             
@@ -153,7 +155,9 @@ io.sockets.on('connection', function (client) {
             
             callback(data);
         } else {
-            callback({"status":"Not logged in", "error": 2});
+            data["status"] = "Not Logged In";
+            data["error"] = 2;
+            callback(data);
         }
     });
 
@@ -168,6 +172,12 @@ io.sockets.on('connection', function (client) {
         } else {
             callback({"status":"Not logged in", "error": 2})
         }
+    });
+
+    client.on('communicatewithgame', function (username, game, callback) {
+        console.log(username + " is trying to chat with game " + game);
+        io.sockets.in(game).emit('message', "RIGHT");
+        callback("Tried");
     });
 });
 

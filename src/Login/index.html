@@ -138,6 +138,7 @@ span.psw {
 <button id="leaveGame" style="display: none; width:auto;">Leave the Game</button>
 <button id="gameInfo" style="display: none; width:auto;">Get Game Information</button>
 <button id="move" style="display: none; width:auto;" disabled>Make a move</button>
+<button id="com" style="display: none; width:auto;">communicate</button>
 
 <div id="servermessage"></div>
 
@@ -293,6 +294,7 @@ span.psw {
                 $('#joinGame').css('display', 'block');
                 $('#gameInfo').css('display', 'none');
                 $('#move').css('display', 'none');
+                $('#com').css('display', 'none');
             } else {
                 notLoggedIn();
             }
@@ -319,6 +321,7 @@ span.psw {
                 $('#joinGame').css('display', 'none');
                 $('#gameInfo').css('display', 'block');
                 $('#move').css('display', 'none');
+                $('#com').css('display', 'block');
                 myGame = gameName;
             } else {
                 $('#loginBtn').css('display','none');
@@ -329,6 +332,7 @@ span.psw {
                 $('#joinGame').css('display', 'block');
                 $('#gameInfo').css('display', 'none');
                 $('#move').css('display', 'none');
+                $('#com').css('display', 'none');
                 myGame = '';
             }
 
@@ -344,7 +348,7 @@ span.psw {
         $('#joinModal').css('display','none');
 
         socket.emit('joinGame', username, gameName, function(data){
-            console.log(client);
+            
             if (data["gameJoined"]){
                 
                 $('#loginBtn').css('display','none');
@@ -355,6 +359,7 @@ span.psw {
                 $('#joinGame').css('display', 'none');
                 $('#gameInfo').css('display', 'block');
                 $('#move').css('display', 'none');
+                $('#com').css('display', 'block');
                 myGame = gameName;
             } else {
                 $('#loginBtn').css('display','none');
@@ -365,6 +370,7 @@ span.psw {
                 $('#joinGame').css('display', 'block');
                 $('#gameInfo').css('display', 'none');
                 $('#move').css('display', 'none');
+                $('#com').css('display', 'none');
                 myGame = '';
             }
 
@@ -392,9 +398,10 @@ span.psw {
                 $('#joinGame').css('display', 'none');
                 $('#gameInfo').css('display', 'block');
                 $('#move').css('display', 'none');
+                $('#com').css('display', 'block');
             }
 
-            if (data[error] == 2){
+            if (data["error"] == 2){
                 notLoggedIn();
             }
         });
@@ -414,6 +421,7 @@ span.psw {
                 $('#joinGame').css('display', 'none');
                 $('#gameInfo').css('display', 'none');
                 $('#move').css('display', 'none');
+                $('#com').css('display', 'none');
             } else {
                 console.log(data["status"]);
                 $('#loginBtn').css('display','none');
@@ -424,6 +432,7 @@ span.psw {
                 $('#joinGame').css('display', 'block');
                 $('#gameInfo').css('display', 'none');
                 $('#move').css('display', 'none');
+                $('#com').css('display', 'none');
             }
 
             if (data["error"] == 2){
@@ -463,6 +472,15 @@ span.psw {
         console.log(data);
     });
 
+    $('#com').click(function () {
+        console.log("lets chat");
+        socket.emit('communicatewithgame', username, myGame, function(data){
+
+            console.log(data);
+        });
+
+    });
+
     $('#ReturnToLobby').click(function () {
         $('#loginBtn').css('display','none');
         $('#logout').css('display','block');
@@ -473,11 +491,13 @@ span.psw {
         $('#gameInfo').css('display', 'none');
         $('#move').css('display', 'none');
         $('#move').attr("disabled", "disabled");
+        $('#com').css('display', 'none');
 
     });
 
     $('#gameInfo').click(function () {
         socket.emit('getGameInfo', username, function(data){
+            console.log(data);
             if (data["error"] == 2){
                 notLoggedIn();
             }
@@ -512,6 +532,7 @@ span.psw {
         $('#joinGame').css('display', 'block');
         $('#gameInfo').css('display', 'none');
         $('#move').css('display', 'none');
+        $('#com').css('display', 'none');
         myGame = '';
     }
     function notLoggedIn(){
@@ -523,6 +544,7 @@ span.psw {
         $('#joinGame').css('display', 'none');
         $('#gameInfo').css('display', 'none');
         $('#move').css('display', 'none');
+        $('#com').css('display', 'none');
     }
     function findGames(){
         socket.emit('findGame', username, function(data){
