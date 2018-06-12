@@ -377,6 +377,9 @@ span.psw {
             if (data["error"] == 2){
                 notLoggedIn();
             }
+            if(data["start"]){
+                startTheGame(gameName);
+            }
         });
     });
 
@@ -473,7 +476,6 @@ span.psw {
     });
 
     $('#com').click(function () {
-        console.log("lets chat");
         socket.emit('communicatewithgame', username, myGame, function(data){
 
             console.log(data);
@@ -553,6 +555,10 @@ span.psw {
                 $('#gameList').append('<p>' + data[i].name + '</p>');
             }
         });
+    }
+
+    function startTheGame(gameName){
+        socket.emit('StartTheGame', username, gameName);
     }
 
 </script>

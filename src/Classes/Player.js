@@ -10,11 +10,8 @@ function Player(username, name, session) {
     this.inGame = function(playGame){
         this.currentGame = playGame;
     };
-    this.sayHello = function(){
-
-    };
     this.getHand = function(){
-        
+        return this.myHand;
     };
     this.getCard = function(index) {
 		return this.myHand[index];

@@ -1,7 +1,7 @@
 var http = require('http');
 var fs = require('fs');
 const Player = require('./src/Classes/Player.js');
-const Game = require('./src/Classes/Game');
+const Game = require('./src/Classes/Game.js');
 
 var port = 3000;
 
@@ -21,7 +21,7 @@ var io = require('socket.io').listen(server);
 
 io.sockets.on('connection', function (client) {
     client.emit('message', "O_O");
-   
+    
     // The other clients are told that someone new has arrived
     client.send('You have just connected, Welcome!');
     // emit('message', username + ' has just connected!');
@@ -38,12 +38,12 @@ io.sockets.on('connection', function (client) {
 
         var loggedInAlready = isUserLoggedIn(username);
         if (loggedInAlready["loggedIn"]) {
-            client.id = loggedInAlready["sessionId"];
+            client.sessionId = loggedInAlready["sessionId"];
             var data = {"sessionId": client.sessionId, "success":1, "message": "you are already logged in " + username};
         } else {
             var newPlayer = new Player(username, username, client.id);
             players.push(newPlayer);
-            var data = {"sessionId": client.id, "success":1,"message": "Hello there " + username};
+            var data = {"sessionId": client.sessionId, "success":1,"message": "Hello there " + username};
         }
         callback(data);
         
@@ -98,7 +98,7 @@ io.sockets.on('connection', function (client) {
                 client.join(gameName, function(){
                     io.to(gameName).emit(username + 'has joined the game');
                 });
-                console.log(client.rooms);
+                
                 var success2 = joinGame(username, gameName);
                 var playersObject = getGamePlayers(gameName);
                 data["gameCreated"] = success;
@@ -113,7 +113,7 @@ io.sockets.on('connection', function (client) {
     });
 
     client.on('joinGame', function (username, gameName, callback) {
-        var data = {"gameJoined": false, "error": 0, "status":"all good"};
+        var data = {"gameJoined": false, "error": 0, "status":"all good", "start": false};
         var loggedInAlready = isUserLoggedIn(username);
         if(loggedInAlready["loggedIn"]){
             
@@ -126,10 +126,10 @@ io.sockets.on('connection', function (client) {
                 client.join(gameName, function(){
                     io.sockets.in(gameName).emit('message', username + " has joined the game");
                 });
-                console.log(client.rooms);
                 
             }
-            
+            var canWeStart = canTheGameStart(gameName)
+            data["start"] = canWeStart;
             callback(data);
         } else {
             data["error"] = 2;
@@ -175,9 +175,31 @@ io.sockets.on('connection', function (client) {
     });
 
     client.on('communicatewithgame', function (username, game, callback) {
-        console.log(username + " is trying to chat with game " + game);
         io.sockets.in(game).emit('message', "RIGHT");
         callback("Tried");
+    });
+
+    client.on('StartTheGame', function (username, game) {
+        
+        var loggedInAlready = isUserLoggedIn(username);
+        if(loggedInAlready["loggedIn"]){
+            var started = startTheGame(game);
+            if(started){
+                
+                var thisGame = findParticularGame(game);
+                var participants = thisGame.getPlayers();
+                io.sockets.in(game).emit('GameHasStarted', participants);
+
+                for(var player in participants){
+                    //client.to(participants[player].sessionId).emit("message", "right " + participants[player].id + " lets go");
+                    thisGame.createDeck();
+                    thisGame.dealCards();
+                    io.sockets.connected[participants[player].sessionId].emit("message", participants[player].myHand);
+                
+                };
+            }
+        }
+        
     });
 });
 
@@ -244,7 +266,6 @@ function leaveGame(username, name){
     var success = false
     var theGame = findParticularGame(name);
     var thePlayer = findParticularPlayer(username);
-    // console.log('were here',theGame);
     if((theGame) && (thePlayer)){
         
         try {
@@ -271,7 +292,7 @@ function joinGame(username, name){
     var theGame = findParticularGame(name);
     var thePlayer = findParticularPlayer(username);
     if((theGame) && (thePlayer)){
-        if ((theGame.limit > theGame.gamePlayers.length) && thePlayer.currentGame == null){
+        if ((theGame.limit > theGame.gamePlayers.length) && (thePlayer.currentGame == null) && !(theGame.started)){
             theGame.addPlayer(thePlayer);
             thePlayer.inGame(theGame.name);
             success = true;
@@ -348,11 +369,36 @@ function isGameEmpty(game){
     return gameEmpty;
 }
 
+function canTheGameStart(game){
+    var start = false;
+    var theGame = findParticularGame(game);
+    if((theGame) && (theGame.started === false)){
+        if(theGame.limit == theGame.gamePlayers.length){
+            start = true;
+        }
+
+    }
+    return start;
+}
+
+function startTheGame(game){
+    var started = false;
+    var goodToGo = canTheGameStart(game);
+    if(goodToGo){
+        var theGame = findParticularGame(game);
+        theGame.setStarted(true);
+
+
+        started = true;
+    }
+    return started;
+}
+
 
 server.listen(port, (err) => {
     if (err) {
         return console.log('something bad happened', err)
     }
 
-    console.log(`server is listening on ${port}`)
+    //console.log(`server is listening on ${port}`)
 })
