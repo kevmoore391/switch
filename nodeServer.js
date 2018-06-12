@@ -188,13 +188,12 @@ io.sockets.on('connection', function (client) {
                 
                 var thisGame = findParticularGame(game);
                 var participants = thisGame.getPlayers();
-                io.sockets.in(game).emit('GameHasStarted', participants);
+                //io.sockets.in(game).emit('GameHasStarted', participants);
 
                 for(var player in participants){
                     //client.to(participants[player].sessionId).emit("message", "right " + participants[player].id + " lets go");
-                    thisGame.createDeck();
-                    thisGame.dealCards();
-                    io.sockets.connected[participants[player].sessionId].emit("message", participants[player].myHand);
+                    var data = {"players": participants, "MyHand": participants[player].myHand, "WhosTurn":thisGame.getWhosTurn(), "StartingCard":thisGame.getCardInPlay()};
+                    io.sockets.connected[participants[player].sessionId].emit("GameHasStarted", data);
                 
                 };
             }
@@ -387,9 +386,7 @@ function startTheGame(game){
     if(goodToGo){
         var theGame = findParticularGame(game);
         theGame.setStarted(true);
-
-
-        started = true;
+        started = theGame.getStarted;
     }
     return started;
 }
