@@ -139,32 +139,31 @@ span.psw {
         <a class="navbar-brand"style="color:green" href="#">Peice Of Cake</a>
         <ul class="navbar-nav my-2 my-lg-0">
             
-                <button class="btn btn-outline-success" onclick="displayModal()" id="loginBtn" >Login</button>
-            
-            <!--<button class="btn btn-outline-success" id="logout" style="display: none; width:auto;">Log Off</button>
+            <button class="btn btn-outline-success" onclick="displayModal()" id="loginBtn" >Login</button>
+            <button class="btn btn-outline-success" id="logout" style="display: none; width:auto;">Log Off</button>
             <button class="btn btn-outline-success" id="findGames" style="display: none; width:auto;">Find Game</button>
             <button class="btn btn-outline-success" onclick="displayCreateGameModal()" id="makeGame" style="display: none; width:auto;">Create a Game</button>
             <button class="btn btn-outline-success" onclick="displayJoinGameModal()" id="joinGame" style="display: none; width:auto;">Join A Game</button>
-            <button class="btn btn-outline-success" id="leaveGame" style="display: none; width:auto;">Leave the Game</button>-->
+            <button class="btn btn-outline-success" id="leaveGame" style="display: none; width:auto;">Leave the Game</button>
         </ul>
     </div>
 </nav>
 
 <nav class="navbar fixed-bottom navbar-light bg-light" style="display: block;" id="cards">
     <div class="btn-group-toggle" data-toggle="buttons">
-        <label class="btn btn-primary active">
+        <label class="btn active">
             <input type="checkbox" checked autocomplete="off">
-            <img src="6d.png" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
+            <img src="./../assets/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
 
         </label>
         <label class="btn btn-primary active">
             <input type="checkbox" checked autocomplete="off">
-            <img src="6d.png" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
+            <img src="../../src/assets/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
 
         </label>
         <label class="btn btn-primary active">
             <input type="checkbox" checked autocomplete="off">
-            <img src="6d.png" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
+            <img src="../assets/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
 
         </label>
     </div>
@@ -298,7 +297,7 @@ span.psw {
     var myGame = '';
     // The visitor is asked for their username...
     
-    var socket = io.connect('http://localhost:3000');
+    var socket = io.connect('http://localhost:8080');
     //var login = io.connect('http://localhost:3000/login');
     //var socket = io.connect('http://localhost:3000', username);
 

@@ -3,7 +3,7 @@ var fs = require('fs');
 const Player = require('./src/Classes/Player.js');
 const Game = require('./src/Classes/Game.js');
 
-var port = 3000;
+var port = 8080;
 
 var games = [];
 var loggedIn = {};

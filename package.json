@@ -1,0 +1,28 @@
+{
+  "name": "piece_of_cake",
+  "version": "1.0.0",
+  "description": "A Card Game",
+  "main": "nodeServer.js",
+  "engines": {
+    "node": "9.9.0"
+  },
+  "dependencies": {
+    "express": "^4.16.3",
+    "express-session": "^1.15.6",
+    "socket.io": "^2.1.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevmoore391/switch.git"
+  },
+  "author": "Kevin Moore",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kevmoore391/switch/issues"
+  },
+  "homepage": "https://github.com/kevmoore391/switch#readme"
+}

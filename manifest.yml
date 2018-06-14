@@ -1,0 +1,6 @@
+name: piece_of_cake
+instances: 1
+memory: 128M
+buildpack: https://github.com/cloudfoundry/nodejs-buildpack
+command: node nodeServer.js
+OPTIMIZE_MEMORY: true
