@@ -5,9 +5,7 @@ var server = require('http').Server(app);
 var io = require('socket.io')(server);
 var path = require('path');
 
-var gameChannel = io.of('/TheGame');
 
-var fs = require('fs');
 const Player = require('./src/Classes/Player.js');
 const Game = require('./src/Classes/Game.js');
 
@@ -186,11 +184,6 @@ io.on('connection', function (client) {
         }
     });
 
-    client.on('communicatewithgame', function (username, game, callback) {
-        io.sockets.in(game).emit('message', "RIGHT");
-        callback("Tried");
-    });
-
     client.on('StartTheGame', function (username, game) {
         
         var loggedInAlready = isUserLoggedIn(username);
@@ -201,17 +194,25 @@ io.on('connection', function (client) {
                 var thisGame = findParticularGame(game);
                 var participants = thisGame.getPlayers();
                 //io.sockets.in(game).emit('GameHasStarted', participants);
-
                 for(var player in participants){
                     //client.to(participants[player].sessionId).emit("message", "right " + participants[player].id + " lets go");
-                    var data = {"players": participants, "MyHand": participants[player].myHand, "WhosTurn":thisGame.getWhosTurn(), "StartingCard":thisGame.getCardInPlay()};
+                    var data = {"players": getGamePlayers(game), "MyHand": participants[player].myHand, "WhosTurn":thisGame.getWhosTurn(), "StartingCard":thisGame.getCardInPlay()};
                     io.sockets.connected[participants[player].sessionId].emit("GameHasStarted", data);
-                
+                    
                 };
+                var playersTurn = thisGame.getWhosTurn();
+                io.sockets.connected[playersTurn.sessionId].emit("Yourturn", true);
             }
         }
         
     });
+
+    
+    client.on('MadeAMove', function (username, game, theMove) {
+        
+        console.log("The Move by: " + username + " in game:" + game + ", is: " + theMove);
+    });
+
 });
 
 function isUserLoggedIn(username){

@@ -4,7 +4,7 @@
   "description": "A Card Game",
   "main": "nodeServer.js",
   "engines": {
-    "node": "9.9.0"
+    "node": "10.4.1"
   },
   "dependencies": {
     "express": "^4.16.3",

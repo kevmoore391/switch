@@ -1,9 +1,7 @@
 function Card (selectCardValue, selectCardSuit) {
     //declaring the necessary variables
-	var suit;
-	var value;
-	var symbol;
-    var joker;
+	
+    this.joker = false;
     this.nameSuit = [ "Clubs", "Diamonds", "Hearts","Spades", "Black", "Red" ];
 	this.nameSymbol = [ "\u2663", "\u2666", "\u2665", "\u2660", "\u25A0"];
     this.nameValue = [ "Ace", "2", "3", "4", "5", "6","7", "8", "9", "10", "Jack", "Queen", "King", "Joker" ];
@@ -14,14 +12,11 @@ function Card (selectCardValue, selectCardSuit) {
     
     this.evaluate = function(){
         if (this.value == 13) {
-            if (joker == false) {
-                symbol = 4;
-                suit = 4;
-                joker = true;
-            } else {
-                symbol = 4;
-                suit = 5;
-            }
+            
+            this.symbol = 4;
+            this.suit = 4;
+            this.joker = true;
+            
         }
     }
     this.setSuit = function(newSuit){

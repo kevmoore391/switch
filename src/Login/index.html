@@ -69,8 +69,8 @@ span.psw {
     z-index: 1; /* Sit on top */
     left: 0;
     top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
+    width: 70%; /* Full width */
+    height: 70%; /* Full height */
     overflow: auto; /* Enable scroll if needed */
     background-color: rgb(0,0,0); /* Fallback color */
     background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
@@ -162,8 +162,6 @@ span.psw {
 
         </label>
     </div>
-    
-    
 </nav>
 
 
@@ -457,15 +455,21 @@ span.psw {
 
     socket.on('GameHasStarted', function(data) {
         
-        console.log(data);
-        for(var i in data["MyHand"]){
-
+        console.log("your cards are");
+        var hand = data["MyHand"]
+        for(var i in hand){
+            var value = hand[i].value;
+            var suit = hand[i].suit;
+            var card = hand[i].nameValue[value] + " " + hand[i].nameSuit[suit];
+            console.log(card);
         }
     });
 
     socket.on('Yourturn', function(data) {
        
-        console.log(data);
+        if (data) {
+            console.log("turn cards enabled");
+        }
     });
 
     $('.move').click(function () {
