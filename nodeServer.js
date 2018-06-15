@@ -1,25 +1,37 @@
-var http = require('http');
+var app = require('express')();
+var express = require('express');
+var handlebars = require('express3-handlebars');
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
+var path = require('path');
+
+var gameChannel = io.of('/TheGame');
+
 var fs = require('fs');
 const Player = require('./src/Classes/Player.js');
 const Game = require('./src/Classes/Game.js');
 
-var port = 8080;
+var port = 80;
 
 var games = [];
 var loggedIn = {};
 var players = [];
 // Loading the file index.html displayed to the client
-var server = http.createServer(function(req, res) {
-    fs.readFile('./src/Login/index.html', 'utf-8', function(error, content) {
-        res.writeHead(200, {"Content-Type": "text/html"});
-        res.end(content);
-    });
-});
+// var server = http.createServer(function(req, res) {
+//     fs.readFile('./src/Login/index.html', 'utf-8', function(error, content) {
+//         res.writeHead(200, {"Content-Type": "text/html"});
+//         res.end(content);
+//     });
+// });
 
 // Loading socket.io
-var io = require('socket.io').listen(server);
+app.use(express.static(path.join(__dirname, '/src/assets')));
 
-io.sockets.on('connection', function (client) {
+app.get('/', function (req, res) {
+    res.sendFile(__dirname + '/src/Login/index.html');
+});
+
+io.on('connection', function (client) {
     client.emit('message', "O_O");
     
     // The other clients are told that someone new has arrived
@@ -96,7 +108,7 @@ io.sockets.on('connection', function (client) {
             var success = createGame(username, size, gameName);
             if (success){
                 client.join(gameName, function(){
-                    io.to(gameName).emit(username + 'has joined the game');
+                    io.sockets.to(gameName).emit(username + 'has joined the game');
                 });
                 
                 var success2 = joinGame(username, gameName);

@@ -151,22 +151,19 @@ span.psw {
 
 <nav class="navbar fixed-bottom navbar-light bg-light" style="display: block;" id="cards">
     <div class="btn-group-toggle" data-toggle="buttons">
+        <label class="btn">
+            <input type="checkbox" autocomplete="off">
+            <img src="http://localhost/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
+
+        </label>
         <label class="btn active">
             <input type="checkbox" checked autocomplete="off">
-            <img src="./../assets/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
-
-        </label>
-        <label class="btn btn-primary active">
-            <input type="checkbox" checked autocomplete="off">
-            <img src="../../src/assets/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
-
-        </label>
-        <label class="btn btn-primary active">
-            <input type="checkbox" checked autocomplete="off">
-            <img src="../assets/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
+            <img src="http://localhost/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="6d"/>
 
         </label>
     </div>
+    
+    
 </nav>
 
 
@@ -297,7 +294,7 @@ span.psw {
     var myGame = '';
     // The visitor is asked for their username...
     
-    var socket = io.connect('http://localhost:8080');
+    var socket = io.connect('http://localhost:80');
     //var login = io.connect('http://localhost:3000/login');
     //var socket = io.connect('http://localhost:3000', username);
 
