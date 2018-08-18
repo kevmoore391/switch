@@ -9,6 +9,7 @@ function Card (selectCardValue, selectCardSuit) {
     this.value = selectCardValue;
     this.suit = selectCardSuit;
     this.symbol = selectCardSuit;
+    this.face = this.nameValue[this.value] + this.nameSuit[this.suit];
     
     this.evaluate = function(){
         if (this.value == 13) {

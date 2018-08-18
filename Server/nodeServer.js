@@ -8,7 +8,7 @@ require(path.join(__dirname, '/../public/routes'))(app);
 require(path.join(__dirname, '/../public/app/components/game/engine'))(io)
 
 
-var port = 80;
+var port = 8080;
 
 
 // Loading the file index.html displayed to the client

@@ -1,13 +1,19 @@
 var switchApp = angular.module('SwitchApp', [])
-switchApp.controller('SwitchController', function ($scope) {
+switchApp.controller('SwitchController', ['$scope', function($scope) {
     var modal = $('#loginModal');
     var gameModal = $('#gameModal');
     var joinModal = $('#joinModal');
-    $scope.showLoginModal = false;
-
+    $scope["showLoginModal"] = false;
+    $scope.myHand = [];
+    $scope.sessionId = null;
+    $scope.username = '';
+    $scope.password = '';
+    $scope.myGame = '';
+    $scope.selectedCards = [];
+    $scope.availableGames = [];
+    $scope.disableMoveButton = true;
+    
     $scope.displayModal = function(){
-        console.log("hi");
-        
         modal.css('display','block');
         return true;
     }
@@ -18,7 +24,7 @@ switchApp.controller('SwitchController', function ($scope) {
     }
 
     $scope.displayJoinGameModal = function(){
-        findGames();
+        $scope.findGames();
         joinModal.css('display','block');
         return true;
     }
@@ -30,7 +36,6 @@ switchApp.controller('SwitchController', function ($scope) {
         return true;
     }
 
-    // When the user clicks anywhere outside of the modal, close it
     window.onclick = function(event) {
         if (event.target == modal) {
             closeModal();
@@ -39,19 +44,14 @@ switchApp.controller('SwitchController', function ($scope) {
         if (event.target == gameModal) {
             closeModal();
         }
-        
     }
 
     //----------------------------------------------------------------------------------------------------------------------------//
 
-    var sessionId = null;
-    var username = '';
-    var password = '';
-    var myGame = '';
-    var selectedCards = [];
+    
     // The visitor is asked for their username...
 
-    var socket = io.connect('http://localhost:80');
+    var socket = io.connect('http://localhost:8080');
     //var login = io.connect('http://localhost:3000/login');
     //var socket = io.connect('http://localhost:3000', username);
 
@@ -60,306 +60,234 @@ switchApp.controller('SwitchController', function ($scope) {
         console.log(message);
     });
 
-
-    $('#login').click(function () {
-        username = $('#username').val();
-        password = $('#psw').val();
+    $scope.login = function () {
+        $scope.username = $('#username').val();
+        $scope.password = $('#psw').val();
 
         $('#loginModal').css('display','none');
 
-        socket.emit('login', username, password, function(data){
+        socket.emit('login', $scope.username, $scope.password, function(data){
             console.log(data["message"]);
             if (data.success == 1){
-                sessionId = data["sessionId"];
-                $('#loginBtn').css('display','none');
-                $('#logout').css('display','block');
-                $('#findGames').css('display','block');
-                $('#makeGame').css('display','block');
-                $('#leaveGame').css('display','none');
-                $('#joinGame').css('display', 'block');
-                $('#move').css('display', 'none');
-                $('#com').css('display', 'none');
+                $scope.sessionId = data["sessionId"];
+                $scope.loggedIn();
             } else {
-                notLoggedIn();
+                $scope.notLoggedIn();
             }
         });
-    });
+    };
 
-    $('#game').click(function () {
+    $scope.createGame = function () {
         gameName = $('#gname').val();
         gameSize = $('#gsize').val();
         if (gameSize == '' || gameSize == 0 || gameSize == null) {
-            gameSize = 4;
+            alert("Please enter a correct game Size");
+            return
         }
         $('#gameModal').css('display','none');
 
-        socket.emit('createGame', username, gameSize, gameName, function(data){
-            console.log(data);
+        socket.emit('createGame', $scope.username, gameSize, gameName, function(data){
             if ((data["gameCreated"]) && (data["gameJoined"])){
-                
-                $('#loginBtn').css('display','none');
-                $('#logout').css('display','none');
-                $('#findGames').css('display','none');
-                $('#makeGame').css('display','none');
-                $('#leaveGame').css('display','block');
-                $('#joinGame').css('display', 'none');
-                myGame = gameName;
-            } else {
-                $('#loginBtn').css('display','none');
-                $('#logout').css('display','block');
-                $('#findGames').css('display','block');
-                $('#makeGame').css('display','block');
-                $('#leaveGame').css('display','none');
-                $('#joinGame').css('display', 'block');
-                myGame = '';
-            }
+                $scope.gameOn();
+                $scope.myGame = gameName;
+            } else if (data["error"] === 1) {
+                alert("A game with this name already exists");
+            };
 
-            if (data["error"] == 2){
-                notLoggedIn();
+            if (data["error"] === 2){
+                $scope.notLoggedIn();
             }
         });
-    });
+    };
 
-    $('#join').click(function () {
+    $scope.joinGame = function () {
         var gameName = $('#jname').val();
 
         $('#joinModal').css('display','none');
 
-        socket.emit('joinGame', username, gameName, function(data){
+        socket.emit('joinGame', $scope.username, gameName, function(data){
             
             if (data["gameJoined"]){
-                
-                $('#loginBtn').css('display','none');
-                $('#logout').css('display','none');
-                $('#findGames').css('display','none');
-                $('#makeGame').css('display','none');
-                $('#leaveGame').css('display','block');
-                $('#joinGame').css('display', 'none');
-                
-                myGame = gameName;
-            } else {
-                $('#loginBtn').css('display','none');
-                $('#logout').css('display','block');
-                $('#findGames').css('display','block');
-                $('#makeGame').css('display','block');
-                $('#leaveGame').css('display','none');
-                $('#joinGame').css('display', 'block');
-                
-                myGame = '';
+                $scope.gameOn();
+                $scope.myGame = gameName;
             }
 
             if (data["error"] == 2){
-                notLoggedIn();
+                $scope.notLoggedIn();
             }
             if(data["start"]){
-                startTheGame(gameName);
+                $scope.startTheGame(gameName);
             }
         });
-    });
+    };
 
-    $('#leaveGame').click(function () {
-
+    $scope.leaveGame = function () {
         $('#joinModal').css('display','none');
-
-        socket.emit('leaveGame', username, function(data){
+        socket.emit('leaveGame', $scope.username, function(data){
             console.log(data);
             if (data["gameLeft"]){
-                
-                leaveGame();
-            } else {
-                $('#loginBtn').css('display','none');
-                $('#logout').css('display','none');
-                $('#findGames').css('display','none');
-                $('#makeGame').css('display','none');
-                $('#leaveGame').css('display','block');
-                $('#joinGame').css('display', 'none');
-                
+                $scope.leaveGame();
             }
 
             if (data["error"] == 2){
-                notLoggedIn();
+                $scope.notLoggedIn();
             }
         });
-    });
+    };
 
-    $('#logout').click(function () {
-        
-        socket.emit('logout', username, function(data){
+    $scope.logout = function () {
+        socket.emit('logout', $scope.username, function(data){
             console.log(data);
             
             if (data["success"]){
-                $('#loginBtn').css('display','block');
-                $('#logout').css('display','none');
-                $('#findGames').css('display','none');
-                $('#makeGame').css('display','none');
-                $('#leaveGame').css('display','none');
-                $('#joinGame').css('display', 'none');
-                
-            } else {
-                console.log(data["status"]);
-                $('#loginBtn').css('display','none');
-                $('#logout').css('display','block');
-                $('#findGames').css('display','block');
-                $('#makeGame').css('display','block');
-                $('#leaveGame').css('display','none');
-                $('#joinGame').css('display', 'block');
-                
+                $scope.notLoggedIn();
             }
 
             if (data["error"] == 2){
-                notLoggedIn();
+                $scope.notLoggedIn();
             }
         });
-    });
+    };
+
+    $scope.findGames = function(){
+        socket.emit('findGame', $scope.username, function(data){
+            if (data["error"] == 2){
+                $scope.notLoggedIn();
+                return;
+            }
+            
+            $scope.availableGames = [];
+            data.forEach(game => {
+                $scope.availableGames.push(game);
+            });
+            console.log($scope.availableGames);
+        });
+    }
+
+    $scope.startTheGame = function (gameName){
+        socket.emit('StartTheGame', $scope.username, gameName);
+    }
 
     socket.on('GameHasStarted', function(data) {
-        
-        console.log("your cards are");
-        var hand = data["MyHand"]
-        for(var i in hand){
-            var value = hand[i].value;
-            var suit = hand[i].suit;
-            var card = hand[i].nameValue[value] + hand[i].nameSymbol[suit];
-
-            $("#myCards").append('<label class="btn thiscard"  name="'+ card + '">');
-            $("#myCards").append('<input type="checkbox" autocomplete="off" >');
-            $("#myCards").append('<img src="http://localhost/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="'+ card + '"/>');
-            $("#myCards").append('</label>');
-            
-        }
+        data["MyHand"].forEach(card => {
+            $scope.addCardToHand(card);
+        });
+        $scope.getGameInfo();
+        console.log($scope.myHand);
+        $scope.$apply();
     });
-
-
 
     socket.on('Yourturn', function(data) {
-        
         if (data) {
             console.log("turn cards enabled");
+            $scope.disableMoveButton = false;
+        } else {
+            $scope.disableMoveButton = true;
         }
+        $scope.$apply();
     });
 
-    $('.move').click(function () {
-        var move = 1;
-        socket.emit('makeMyMove', username, myGame, move, function(data){
+    $scope.chatWithGame = function () {
+        socket.emit('communicatewithgame', $scope.username, $scope.myGame, function(data){
+            console.log(data);
+        });
+    };
+
+    $scope.getPlayers = function () {
+        socket.emit('getPlayers', $scope.username, function(data){
+            console.log("Players: ", data);
+            if (data["error"] == 2){
+                $scope.notLoggedIn();
+            }
+        });
+    };
+
+    $scope.selectCard = function (cardName, index) {
+        cardName = cardName + index;
+        console.log(cardName);
+        if($scope.selectedCards.indexOf(String(cardName)) == -1){
+            console.log("here");
+            $('label[name='+ cardName +']').css("background", "red");
+            $scope.selectedCards.push(cardName);
+        } else {
+            $('label[name='+ cardName +']').css("background", "white");
+            $scope.selectedCards.splice($scope.selectedCards.indexOf(cardName), 1);
+        }
+    };
+
+    $scope.playMove = function () {
+        socket.emit('makeAMove', $scope.username, $scope.myGame, $scope.selectedCards, function(data){
 
             if (data["error"] == 1){
                 console.log("your not in this game!!");
-            }
-            if (data["error"] == 2){
-                notLoggedIn();
+            } else if (data["error"] == 2){
+                $scope.notLoggedIn();
+            } else {
+                $scope.removeCardsFromHand($scope.selectedCards);
             }
         });
+    };
+    $scope.removeCardsFromHand = function (cardsToRemove) {
+        $scope.selectedCards.forEach(card => {
+            $scope.myHand.splice($scope.myHand.indexOf(card), 1);
+        })
+    };
 
-    });
+    $scope.addCardToHand = function(card){
+        $scope.myHand.push(card);
+    };
 
     socket.on('GameOver', function(data) {
-        $('#move').css('display', 'block');
-        $('#move').attr("disabled", "disabled");
-        console.log(data);
+        $scope.disableMoveButton = true;
     });
 
-    $('#com').click(function () {
-        socket.emit('communicatewithgame', username, myGame, function(data){
-
+    $scope.getGameInfo = function () {
+        socket.emit('getGameInfo', $scope.username, function(data){
             console.log(data);
+            if (data["error"] == 2){
+                $scope.notLoggedIn();
+            }
         });
+    };
 
-    });
-
-
-
-    $('#ReturnToLobby').click(function () {
+    $scope.loggedIn = function(){
         $('#loginBtn').css('display','none');
         $('#logout').css('display','block');
         $('#findGames').css('display','block');
         $('#makeGame').css('display','block');
         $('#leaveGame').css('display','none');
         $('#joinGame').css('display', 'block');
+        $('#makeAMove').css('display', 'none');
+    }
 
-    });
-
-    $('#gameInfo').click(function () {
-        socket.emit('getGameInfo', username, function(data){
-            console.log(data);
-            if (data["error"] == 2){
-                notLoggedIn();
-            }
-        });
-    });
-
-    $('#getPlayers').click(function () {
-        socket.emit('getPlayers', username, function(data){
-            console.log("Players: ", data);
-            if (data["error"] == 2){
-                notLoggedIn();
-            }
-        });
-    });
-
-    $('#findGames').click(function () {
-        socket.emit('findGame', username, function(data){
-            console.log(data);
-            if (data["error"] == 2){
-                notLoggedIn();
-            }
-        });
-    });
-
-    $('.thiscard').click(function () {
-        var cardName = $(this).attr("name");
-        
-        if(selectedCards.indexOf(String(cardName)) == -1){
-            
-            $(this).css("background", "red");
-            selectedCards.push(cardName);
-        } else {
-            $(this).css("background", "white");
-            selectedCards.splice(selectedCards.indexOf(cardName), 1);
-        }
-
-    });
-
-    $('#test').click(function () {
-        
-        $("#myCards").append('<label class="btn thiscard"  name="11" style="background: white;"><input type="checkbox" autocomplete="off"><img src="http://localhost/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="22"/></label>');
-        
-    });
-
-    function gameOn(){
+    $scope.gameOn = function(){
         $('#loginBtn').css('display','none');
         $('#logout').css('display','none');
         $('#findGames').css('display','none');
         $('#makeGame').css('display','none');
         $('#leaveGame').css('display','block');
         $('#joinGame').css('display', 'none');
+        $('#makeAMove').css('display', 'block');
     }
-    function leaveGame(){
+
+    $scope.leaveGame = function(){
         $('#loginBtn').css('display','none');
         $('#logout').css('display','block');
         $('#findGames').css('display','block');
         $('#makeGame').css('display','block');
         $('#leaveGame').css('display','none');
         $('#joinGame').css('display', 'block');
-        myGame = '';
+        $('#makeAMove').css('display', 'none');
+        $scope.myGame = '';
     }
-    function notLoggedIn(){
+
+    $scope.notLoggedIn = function(){
         $('#loginBtn').css('display','block');
         $('#logout').css('display','none');
         $('#findGames').css('display','none');
         $('#makeGame').css('display','none');
         $('#leaveGame').css('display','none');
         $('#joinGame').css('display', 'none');
+        $('#makeAMove').css('display', 'none');
     }
-    function findGames(){
-        socket.emit('findGame', username, function(data){
-            $('#gameList').html();
-            for(i in data){
-                $('#gameList').append('<p>' + data[i].name + '</p>');
-            }
-        });
-    }
-
-    function startTheGame(gameName){
-        socket.emit('StartTheGame', username, gameName);
-    }
-});
+}]);

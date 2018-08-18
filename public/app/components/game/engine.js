@@ -2,8 +2,7 @@
     
     var path = require('path');
     const Player = require(path.join(__dirname, '/objects/Player.js'));
-    const Game = require(path.join(__dirname, '/objects/Game.js'));    
-    console.log(__dirname);    
+    const Game = require(path.join(__dirname, '/objects/Game.js'));      
 
     var games = [];
     var loggedIn = {};
@@ -83,18 +82,17 @@
         client.on('createGame', function (username, size, gameName, callback) {
             var loggedInAlready = isUserLoggedIn(username);
             if(loggedInAlready["loggedIn"]){
-                var data = {"gameJoined": false, "gameCreated": false};
-                var success = createGame(username, size, gameName);
-                if (success){
+                var data = {"gameJoined": false, "gameCreated": false, "error": 0};
+                data["gameCreated"] = createGame(username, size, gameName);
+                if (data["gameCreated"]){
                     client.join(gameName, function(){
                         io.sockets.to(gameName).emit(username + 'has joined the game');
                     });
                     
-                    var success2 = joinGame(username, gameName);
-                    var playersObject = getGamePlayers(gameName);
-                    data["gameCreated"] = success;
-                    data["gameJoined"] = success2;
-                    data["players"] = playersObject;
+                    data["gameJoined"] = joinGame(username, gameName);
+                    data["players"] = getGamePlayers(gameName);
+                } else {
+                    data["error"] = 1;
                 }
                 callback(data);
             } else {
@@ -188,10 +186,10 @@
             
         });
 
-        
-        client.on('MadeAMove', function (username, game, theMove) {
-            
-            console.log("The Move by: " + username + " in game:" + game + ", is: " + theMove);
+        client.on('MadeAMove', function (username, gameName, theMove) {
+            io.sockets.in(gameName).emit('message', username + " has jmade a move");
+            console.log("The Move by: " + username + " in game:" + gameName + ", is: " + theMove);
+            return {error: 0};
         });
 
     });
@@ -228,10 +226,18 @@
 
     function createGame(username, size, name){
         var success = false;
+        var gameExistsAlready = false;
         try {
             var newGame = new Game(name, size, username);
-            games.push(newGame);
-            success = true;
+            games.forEach(game => {
+            if (game.name == newGame.name)
+                gameExistsAlready = true;
+                return;
+            })
+            if(!gameExistsAlready) {
+                games.push(newGame);
+                success = true;
+            }
         } catch(e){
             console.log(e);
             success = false;
