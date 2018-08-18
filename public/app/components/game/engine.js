@@ -108,14 +108,12 @@
                 
                 var success = joinGame(username, gameName);
                 if(success){
-                    
                     var playersObject = getGamePlayers(gameName);
                     data["gameJoined"] = success;
                     data["players"] = playersObject;
                     client.join(gameName, function(){
                         io.sockets.in(gameName).emit('message', username + " has joined the game");
                     });
-                    
                 }
                 var canWeStart = canTheGameStart(gameName)
                 data["start"] = canWeStart;
@@ -133,8 +131,8 @@
             
             if(loggedInAlready["loggedIn"]){
                 var thePlayer = findParticularPlayer(username);
-                
-                if(thePlayer.currentGame != null){
+                var theGame = findParticularGame(thePlayer.currentGame.name);
+                if(theGame){
                     client.leave(thePlayer.currentGame);
                     client.in(thePlayer.currentGame).emit('message', username + 'has left the game');
                     leaveGame(username, thePlayer.currentGame);
@@ -186,10 +184,49 @@
             
         });
 
-        client.on('MadeAMove', function (username, gameName, theMove) {
+        client.on('MadeAMove', function (username, gameName, theMove, callback) {
             io.sockets.in(gameName).emit('message', username + " has jmade a move");
             console.log("The Move by: " + username + " in game:" + gameName + ", is: " + theMove);
-            return {error: 0};
+            callback({error: 0});
+        });
+
+        client.on('amIInAGame', function (username, callback) {
+            var alreadyInGame = isUserInGame(username);
+            
+            if (alreadyInGame) {
+                var player = findParticularPlayer(username);
+                var game = getCurrentGameInfo(username);
+                data = {
+                    "playerInfo": player, 
+                    "game" : game,
+                    "error" : 0
+                }
+                io.sockets.connected[participants[player].sessionId].emit("ThisIsTheGame", data);
+                client.in(thePlayer.currentGame).emit('message', username + 'has rejoined the game.');
+                callback(data);
+            } else {
+                callback({error: 1});
+            };
+        });
+
+        client.on('checkForWinner', function (game) {
+            var theGame = getCurrentGameInfo(game);
+            
+            if(theGame.started) {
+                if (game.gamePlayers.length === 1){
+                    player = game.gamePlayers[0];
+                    io.sockets.connected[participants[player].sessionId].emit("YouWin", data);
+                    client.in(theGame).emit('GameOver');
+                } else if( game.gamePlayers.length > 1) {
+                    game.gamePlayers.forEach(currentPlayer => {
+                        if(currentPlayer.myHand.length === 0) {
+                            io.sockets.connected[participants[currentPlayer].sessionId].emit("YouWin", data);
+                            client.in(theGame).emit('GameOver');
+                            return;
+                        }
+                    })
+                }
+            }
         });
 
     });

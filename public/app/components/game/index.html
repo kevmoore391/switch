@@ -28,7 +28,7 @@
                     <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="makeGame" ng-click="displayCreateGameModal()">Create a Game</button>
                     <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="joinGame" ng-click="displayJoinGameModal()">Join A Game</button>
                     <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="leaveGame" ng-click="leaveGame()">Leave the Game</button>
-                    <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="makeAMove" ng-disabled="disableMoveButton" ng-click="makeAMove()">Make A move</button>
+                    <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="makeAMove" ng-disabled="disableMoveButton" ng-click="playMove()">Make A move</button>
                 </ul>
             </div>
         </nav>
@@ -37,7 +37,7 @@
             <div class="btn-group-toggle" id="myCards" name="myCards" data-toggle="buttons" >
                 <label class="btn thiscard" ng-repeat="card in myHand" name="{{card.face}}{{$index + 1}}" ng-click="selectCard(card.face,$index + 1)">
                     <input type="checkbox" autocomplete="off" >
-                    <img src="assets/images/Playing_card_diamond_6.svg" width="100" height="80" class="img-fluid img-thumbnail" alt="{{card.face}}"/>
+                    <img src="assets/images/cards/{{card.face}}.jpg" width="100" height="80" class="img-fluid img-thumbnail" alt="{{card.face}}"/>
                 </label>
                 
             </div>
@@ -47,7 +47,7 @@
         
             <form class="modal-content animate" onsubmit="event.preventDefault()">
                 <div class="imgcontainer">
-                    <span onclick="closeModal()" class="close" title="Close Modal">&times;</span>
+                    <span ng-click="closeModal()" class="close" title="Close Modal">&times;</span>
                     <img src="img_avatar2.png" alt="Avatar" class="avatar">
                 </div>
 
@@ -65,7 +65,7 @@
                 </div>
 
                 <div class="container" style="background-color:#f1f1f1">
-                    <button type="button" id="cancel" onclick="closeModal()"class="cancelbtn">Cancel</button>
+                    <button type="button" id="cancel" ng-click="closeModal()"class="cancelbtn">Cancel</button>
                     <span class="psw">Forgot <a href="#">password?</a></span>
                 </div>
             </form>
@@ -74,7 +74,7 @@
         <div id="gameModal" class="modal">
             <form class="modal-content animate" onsubmit="event.preventDefault()">
                 <div class="imgcontainer">
-                    <span onclick="closeModal()" class="close" title="Close Modal">&times;</span>
+                    <span ng-click="closeModal()" class="close" title="Close Modal">&times;</span>
                     <img src="img_avatar2.png" alt="Avatar" class="avatar">
                 </div>
 
@@ -94,12 +94,12 @@
         <div id="joinModal" class="modal">
             <form class="modal-content animate" onsubmit="event.preventDefault()">
                 <div class="imgcontainer">
-                    <span onclick="closeModal()" class="close" title="Close Modal">&times;</span>
+                    <span ng-click="closeModal()" class="close" title="Close Modal">&times;</span>
                     <img src="img_avatar2.png" alt="Avatar" class="avatar">
                 </div>
         
                 <div class="container">
-                    <div ng-repeat="game in availableGames">{{availableGames.name}}</div>
+                    <div ng-repeat="game in availableGames">{{game.name}}</div>
                     <label for="jname"><b>Game Name</b></label>
                     <input type="text" placeholder="Game Name" name="jname" id="jname" required>
         

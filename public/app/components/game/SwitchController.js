@@ -1,6 +1,6 @@
 var switchApp = angular.module('SwitchApp', [])
 switchApp.controller('SwitchController', ['$scope', function($scope) {
-    var modal = $('#loginModal');
+    var loginModal = $('#loginModal');
     var gameModal = $('#gameModal');
     var joinModal = $('#joinModal');
     $scope["showLoginModal"] = false;
@@ -14,7 +14,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     $scope.disableMoveButton = true;
     
     $scope.displayModal = function(){
-        modal.css('display','block');
+        loginModal.css('display','block');
         return true;
     }
 
@@ -30,19 +30,23 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     }
 
     $scope.closeModal = function(){
-        modal.css('display','none');
+        loginModal.css('display','none');
         gameModal.css('display','none');
         joinModal.css('display','none');
         return true;
     }
 
     window.onclick = function(event) {
-        if (event.target == modal) {
-            closeModal();
+        if (event.target == loginModal) {
+            $scope.closeModal();
         }
 
         if (event.target == gameModal) {
-            closeModal();
+            $scope.closeModal();
+        }
+
+        if (event.target == joinModal) {
+            $scope.closeModal();
         }
     }
 
@@ -124,9 +128,15 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     $scope.leaveGame = function () {
         $('#joinModal').css('display','none');
         socket.emit('leaveGame', $scope.username, function(data){
-            console.log(data);
+            
             if (data["gameLeft"]){
-                $scope.leaveGame();
+                console.log("HI");
+                $scope.checkForWinner();
+                $scope.notLoggedIn();
+                $scope.myHand = [];
+                $scope.selectedCards = [];
+                $scope.myGame = '';
+                $scope.$apply();
             }
 
             if (data["error"] == 2){
@@ -141,6 +151,10 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             
             if (data["success"]){
                 $scope.notLoggedIn();
+                $scope.myHand = [];
+                $scope.selectedCards = [];
+                $scope.myGame = '';
+                $scope.$apply();
             }
 
             if (data["error"] == 2){
@@ -148,6 +162,19 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             }
         });
     };
+
+    $scope.checkIfIamInAGame = function() {
+        socket.emit('amIInAGame', $scope.username, function(data){
+            if (data["error"] == 1){
+                $scope.loggedIn();
+                return;
+            }
+            $scope.myGame = data["game"];
+            $scope.myHand = data["player"].myHand;
+            $scope.gameOn();
+            $scope.$apply();
+        });
+    }
 
     $scope.findGames = function(){
         socket.emit('findGame', $scope.username, function(data){
@@ -160,7 +187,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             data.forEach(game => {
                 $scope.availableGames.push(game);
             });
-            console.log($scope.availableGames);
+            $scope.$apply();
         });
     }
 
@@ -217,7 +244,6 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
 
     $scope.playMove = function () {
         socket.emit('makeAMove', $scope.username, $scope.myGame, $scope.selectedCards, function(data){
-
             if (data["error"] == 1){
                 console.log("your not in this game!!");
             } else if (data["error"] == 2){
@@ -226,7 +252,10 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
                 $scope.removeCardsFromHand($scope.selectedCards);
             }
         });
+        $scope.$apply();
+        $scope.checkForWinner();
     };
+
     $scope.removeCardsFromHand = function (cardsToRemove) {
         $scope.selectedCards.forEach(card => {
             $scope.myHand.splice($scope.myHand.indexOf(card), 1);
@@ -237,8 +266,19 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         $scope.myHand.push(card);
     };
 
+    $scope.checkForWinner = function () {
+        socket.emit('checkforWinner', $scope.myGame.name);
+    };
+
     socket.on('GameOver', function(data) {
         $scope.disableMoveButton = true;
+        $scope.myHand = [];
+        $scope.myGame = '';
+        $scope.loggedIn();
+    });
+
+    socket.on('YouWin', function(data) {
+        alert("WOO Well Done! you win the game!");
     });
 
     $scope.getGameInfo = function () {
