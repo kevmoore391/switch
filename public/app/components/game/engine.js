@@ -28,12 +28,15 @@
 
             var loggedInAlready = isUserLoggedIn(username);
             if (loggedInAlready["loggedIn"]) {
-                client.sessionId = loggedInAlready["sessionId"];
+                var player = findParticularPlayer(username);
+                
+                client["sessionId"] = loggedInAlready["sessionId"];
+                player["sessionId"] = loggedInAlready["sessionId"];
                 var data = {"sessionId": client.sessionId, "success":1, "message": "you are already logged in " + username};
             } else {
                 var newPlayer = new Player(username, username, client.id);
                 players.push(newPlayer);
-                var data = {"sessionId": client.sessionId, "success":1,"message": "Hello there " + username};
+                var data = {"sessionId": client["sessionId"], "success":1,"message": "Hello there " + username};
             }
             callback(data);
             
@@ -128,13 +131,11 @@
         client.on('leaveGame', function (username, callback) {
             var data = {"gameLeft": false, "error": 0};
             var loggedInAlready = isUserLoggedIn(username);
-            
             if(loggedInAlready["loggedIn"]){
                 var thePlayer = findParticularPlayer(username);
-                var theGame = findParticularGame(thePlayer.currentGame.name);
-                if(theGame){
+                if(thePlayer.currentGame){
                     client.leave(thePlayer.currentGame);
-                    client.in(thePlayer.currentGame).emit('message', username + 'has left the game');
+                    client.in(thePlayer.currentGame).emit('playerLeft', username);
                     leaveGame(username, thePlayer.currentGame);
                     
                     data["gameLeft"] = true;
@@ -167,18 +168,19 @@
             if(loggedInAlready["loggedIn"]){
                 var started = startTheGame(game);
                 if(started){
+                    try {
+                        var thisGame = findParticularGame(game);
+                        var participants = thisGame.getPlayers();
+                        for(var player in participants){
+                            var data = {"players": getGamePlayers(game), "MyHand": participants[player].myHand, "WhosTurn":thisGame.getWhosTurn(), "StartingCard":thisGame.getCardInPlay()};
+                            io.sockets.connected[participants[player].sessionId].emit("GameHasStarted", data);  
+                        };
+                        var playersTurn = thisGame.getWhosTurn();
+                        io.sockets.connected[playersTurn.sessionId].emit("Yourturn", true);
+                    } catch (e){
+                        console.log(e);
+                    }
                     
-                    var thisGame = findParticularGame(game);
-                    var participants = thisGame.getPlayers();
-                    //io.sockets.in(game).emit('GameHasStarted', participants);
-                    for(var player in participants){
-                        //client.to(participants[player].sessionId).emit("message", "right " + participants[player].id + " lets go");
-                        var data = {"players": getGamePlayers(game), "MyHand": participants[player].myHand, "WhosTurn":thisGame.getWhosTurn(), "StartingCard":thisGame.getCardInPlay()};
-                        io.sockets.connected[participants[player].sessionId].emit("GameHasStarted", data);
-                        
-                    };
-                    var playersTurn = thisGame.getWhosTurn();
-                    io.sockets.connected[playersTurn.sessionId].emit("Yourturn", true);
                 }
             }
             
@@ -191,17 +193,15 @@
         });
 
         client.on('amIInAGame', function (username, callback) {
-            var alreadyInGame = isUserInGame(username);
+            var thePlayer = findParticularPlayer(username);
             
-            if (alreadyInGame) {
-                var player = findParticularPlayer(username);
+            if (thePlayer.currentGame) {
                 var game = getCurrentGameInfo(username);
                 data = {
-                    "playerInfo": player, 
+                    "playerInfo": thePlayer, 
                     "game" : game,
                     "error" : 0
                 }
-                io.sockets.connected[participants[player].sessionId].emit("ThisIsTheGame", data);
                 client.in(thePlayer.currentGame).emit('message', username + 'has rejoined the game.');
                 callback(data);
             } else {
@@ -212,16 +212,16 @@
         client.on('checkForWinner', function (game) {
             var theGame = getCurrentGameInfo(game);
             
-            if(theGame.started) {
+            if(theGame.started && !theGame.winner) {
                 if (game.gamePlayers.length === 1){
                     player = game.gamePlayers[0];
-                    io.sockets.connected[participants[player].sessionId].emit("YouWin", data);
-                    client.in(theGame).emit('GameOver');
+                    io.sockets.connected[player.sessionId].emit("YouWin", data);
+                    client.in(theGame).emit('GameOver', {"winner": player.username});
                 } else if( game.gamePlayers.length > 1) {
                     game.gamePlayers.forEach(currentPlayer => {
                         if(currentPlayer.myHand.length === 0) {
-                            io.sockets.connected[participants[currentPlayer].sessionId].emit("YouWin", data);
-                            client.in(theGame).emit('GameOver');
+                            io.sockets.connected[currentPlayer.sessionId].emit("YouWin", data);
+                            client.in(theGame).emit('GameOver', {"winner": player.username});
                             return;
                         }
                     })
@@ -267,10 +267,11 @@
         try {
             var newGame = new Game(name, size, username);
             games.forEach(game => {
-            if (game.name == newGame.name)
-                gameExistsAlready = true;
-                return;
-            })
+                if (game.name === newGame.name){
+                    gameExistsAlready = true;
+                    return;
+                }
+            });
             if(!gameExistsAlready) {
                 games.push(newGame);
                 success = true;
@@ -306,7 +307,7 @@
             
             try {
                 theGame.gamePlayers.splice(theGame.gamePlayers.indexOf(thePlayer), 1);
-                thePlayer.currentGame = null
+                thePlayer.currentGame = null;
                 success = true;
                 var isTheGameEmpty = isGameEmpty(name);
                 if(isTheGameEmpty){
@@ -381,16 +382,6 @@
         }    
         
         return theGame;
-    }
-
-    function isUserInGame(username){
-        var userInGame = true;
-        var thePlayer = findParticularPlayer(username);
-        if(thePlayer.currentGame == null){
-            userInGame = false;
-        }    
-        
-        return userInGame;
     }
 
     function isGameEmpty(game){

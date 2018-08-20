@@ -75,6 +75,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             if (data.success == 1){
                 $scope.sessionId = data["sessionId"];
                 $scope.loggedIn();
+                $scope.checkIfIamInAGame();
             } else {
                 $scope.notLoggedIn();
             }
@@ -94,6 +95,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             if ((data["gameCreated"]) && (data["gameJoined"])){
                 $scope.gameOn();
                 $scope.myGame = gameName;
+                $scope.getGameInfo();
             } else if (data["error"] === 1) {
                 alert("A game with this name already exists");
             };
@@ -114,6 +116,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             if (data["gameJoined"]){
                 $scope.gameOn();
                 $scope.myGame = gameName;
+                $scope.getGameInfo();
             }
 
             if (data["error"] == 2){
@@ -126,13 +129,11 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     };
 
     $scope.leaveGame = function () {
-        $('#joinModal').css('display','none');
         socket.emit('leaveGame', $scope.username, function(data){
             
             if (data["gameLeft"]){
-                console.log("HI");
-                $scope.checkForWinner();
-                $scope.notLoggedIn();
+                $scope.leftGame();
+                $scope.checkForWinner($scope.myGame.name);
                 $scope.myHand = [];
                 $scope.selectedCards = [];
                 $scope.myGame = '';
@@ -167,10 +168,12 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         socket.emit('amIInAGame', $scope.username, function(data){
             if (data["error"] == 1){
                 $scope.loggedIn();
+                console.log("amIInAGame - No");
                 return;
             }
+            console.log("amIInAGame - Yes");
             $scope.myGame = data["game"];
-            $scope.myHand = data["player"].myHand;
+            $scope.myHand = data["playerInfo"].myHand;
             $scope.gameOn();
             $scope.$apply();
         });
@@ -187,6 +190,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             data.forEach(game => {
                 $scope.availableGames.push(game);
             });
+            console.log($scope.availableGames);
             $scope.$apply();
         });
     }
@@ -266,19 +270,24 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         $scope.myHand.push(card);
     };
 
-    $scope.checkForWinner = function () {
-        socket.emit('checkforWinner', $scope.myGame.name);
+    $scope.checkForWinner = function (gameName) {
+        socket.emit('checkforWinner', gameName);
     };
 
+    socket.on('playerLeft', function(data) {
+        console.log(data + " left the game");
+        $scope.checkForWinner();
+    });
+
     socket.on('GameOver', function(data) {
-        $scope.disableMoveButton = true;
-        $scope.myHand = [];
-        $scope.myGame = '';
-        $scope.loggedIn();
+        console.log(data["winner"] + " won");
+        $scope.leaveGame();
     });
 
     socket.on('YouWin', function(data) {
         alert("WOO Well Done! you win the game!");
+        $$scope.leaveGame();
+        
     });
 
     $scope.getGameInfo = function () {
@@ -310,7 +319,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         $('#makeAMove').css('display', 'block');
     }
 
-    $scope.leaveGame = function(){
+    $scope.leftGame = function(){
         $('#loginBtn').css('display','none');
         $('#logout').css('display','block');
         $('#findGames').css('display','block');

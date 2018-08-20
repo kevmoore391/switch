@@ -10,6 +10,7 @@ function Game (name, limit, creator) {
     this.gameOver = false;
     this.started = false;
     this.Deck = null;
+    this.winner = null;
     this.newDeck = new TheDeck();
     this.theTable = new TableCards();
     this.trickChecker = new CheckTrick();
