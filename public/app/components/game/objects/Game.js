@@ -14,6 +14,7 @@ function Game (name, limit, creator) {
     this.newDeck = new TheDeck();
     this.theTable = new TableCards();
     this.trickChecker = new CheckTrick();
+    this.clockwise = true;
     this.getName = function() {
         return this.name;
     };
@@ -62,6 +63,7 @@ function Game (name, limit, creator) {
                 this.createDeck();
                 this.dealCards();
                 this.determineFirstPlayer();
+                this.determineFirstcard();
             } catch(e){
                 console.log(e);
                 started = false;
@@ -107,6 +109,17 @@ function Game (name, limit, creator) {
     };
     this.getCardInPlay = function(){
         return this.theTable.getTopTableCard();
+    }
+    this.determineNextPlayersTurn = function() {
+        if (this.clockwise) {
+            var nextPlayerIndex = this.gamePlayers.indexOf(this.playersTurn) + 1;
+            nextPlayerIndex = nextPlayerIndex >= this.gamePlayers.length ? 0 : nextPlayerIndex;
+        } else {
+            var nextPlayerIndex = this.gamePlayers.indexOf(this.playersTurn) - 1;
+            nextPlayerIndex = nextPlayerIndex < 0 ? this.gamePlayers.length - 1 : nextPlayerIndex;
+        }
+
+        this.playersTurn = this.gamePlayers[nextPlayerIndex];
     }
 }
 

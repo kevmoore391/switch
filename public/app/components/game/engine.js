@@ -175,20 +175,22 @@
                             var data = {"players": getGamePlayers(game), "MyHand": participants[player].myHand, "WhosTurn":thisGame.getWhosTurn(), "StartingCard":thisGame.getCardInPlay()};
                             io.sockets.connected[participants[player].sessionId].emit("GameHasStarted", data);  
                         };
-                        var playersTurn = thisGame.getWhosTurn();
-                        io.sockets.connected[playersTurn.sessionId].emit("Yourturn", true);
+                        nextPlayer(thisGame);
                     } catch (e){
                         console.log(e);
                     }
-                    
                 }
             }
             
         });
 
-        client.on('MadeAMove', function (username, gameName, theMove, callback) {
+        client.on('makeAMove', function (username, gameName, theMove, callback) {
             io.sockets.in(gameName).emit('message', username + " has jmade a move");
-            console.log("The Move by: " + username + " in game:" + gameName + ", is: " + theMove);
+            console.log("The Move by: " + username + " in game: " + gameName + ", is: " + theMove);
+            
+            var thisGame = findParticularGame(gameName);
+            thisGame.determineNextPlayersTurn();
+            nextPlayer(thisGame);
             callback({error: 0});
         });
 
@@ -213,15 +215,17 @@
             var theGame = getCurrentGameInfo(game);
             
             if(theGame.started && !theGame.winner) {
-                if (game.gamePlayers.length === 1){
-                    player = game.gamePlayers[0];
+                if (theGame.gamePlayers.length === 1){
+                    player = theGame.gamePlayers[0];
                     io.sockets.connected[player.sessionId].emit("YouWin", data);
                     client.in(theGame).emit('GameOver', {"winner": player.username});
-                } else if( game.gamePlayers.length > 1) {
-                    game.gamePlayers.forEach(currentPlayer => {
+                    theGame.setGameOver(true);
+                } else if( theGame.gamePlayers.length > 1) {
+                    theGame.gamePlayers.forEach(currentPlayer => {
                         if(currentPlayer.myHand.length === 0) {
                             io.sockets.connected[currentPlayer.sessionId].emit("YouWin", data);
                             client.in(theGame).emit('GameOver', {"winner": player.username});
+                            theGame.setGameOver(true);
                             return;
                         }
                     })
@@ -229,6 +233,12 @@
             }
         });
 
+        function nextPlayer(thisGame) {
+            if (!thisGame.gameOver) {
+                var playersTurn = thisGame.getWhosTurn();
+            io.sockets.in(thisGame.name).emit("nextPlayer", {"playersTurn": playersTurn, "topCard": thisGame.getCardInPlay(), "direction": thisGame.clockwise});
+            }
+        };
     });
 
     function isUserLoggedIn(username){
@@ -399,11 +409,8 @@
     function canTheGameStart(game){
         var start = false;
         var theGame = findParticularGame(game);
-        if((theGame) && (theGame.started === false)){
-            if(theGame.limit == theGame.gamePlayers.length){
-                start = true;
-            }
-
+        if((theGame) && (theGame.started === false) && (theGame.limit == theGame.gamePlayers.length)){
+            start = true;
         }
         return start;
     }

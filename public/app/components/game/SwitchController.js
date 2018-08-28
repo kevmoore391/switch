@@ -12,6 +12,8 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     $scope.selectedCards = [];
     $scope.availableGames = [];
     $scope.disableMoveButton = true;
+    $scope.whosTurn = '';
+    $scope.topCard = '';
     
     $scope.displayModal = function(){
         loginModal.css('display','block');
@@ -108,9 +110,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
 
     $scope.joinGame = function () {
         var gameName = $('#jname').val();
-
         $('#joinModal').css('display','none');
-
         socket.emit('joinGame', $scope.username, gameName, function(data){
             
             if (data["gameJoined"]){
@@ -168,10 +168,8 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         socket.emit('amIInAGame', $scope.username, function(data){
             if (data["error"] == 1){
                 $scope.loggedIn();
-                console.log("amIInAGame - No");
                 return;
             }
-            console.log("amIInAGame - Yes");
             $scope.myGame = data["game"];
             $scope.myHand = data["playerInfo"].myHand;
             $scope.gameOn();
@@ -203,14 +201,14 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         data["MyHand"].forEach(card => {
             $scope.addCardToHand(card);
         });
+        $scope.whosTurn = data["WhosTurn"];
+        $scope.topCard = data["StartingCard"]
         $scope.getGameInfo();
-        console.log($scope.myHand);
         $scope.$apply();
     });
 
     socket.on('Yourturn', function(data) {
         if (data) {
-            console.log("turn cards enabled");
             $scope.disableMoveButton = false;
         } else {
             $scope.disableMoveButton = true;
@@ -235,9 +233,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
 
     $scope.selectCard = function (cardName, index) {
         cardName = cardName + index;
-        console.log(cardName);
         if($scope.selectedCards.indexOf(String(cardName)) == -1){
-            console.log("here");
             $('label[name='+ cardName +']').css("background", "red");
             $scope.selectedCards.push(cardName);
         } else {
@@ -247,6 +243,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     };
 
     $scope.playMove = function () {
+        console.log("playing");
         socket.emit('makeAMove', $scope.username, $scope.myGame, $scope.selectedCards, function(data){
             if (data["error"] == 1){
                 console.log("your not in this game!!");
@@ -254,10 +251,11 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
                 $scope.notLoggedIn();
             } else {
                 $scope.removeCardsFromHand($scope.selectedCards);
+                $scope.disableMoveButton = true;
+                $scope.$apply();
+                $scope.checkForWinner();
             }
         });
-        $scope.$apply();
-        $scope.checkForWinner();
     };
 
     $scope.removeCardsFromHand = function (cardsToRemove) {
@@ -275,7 +273,6 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     };
 
     socket.on('playerLeft', function(data) {
-        console.log(data + " left the game");
         $scope.checkForWinner();
     });
 
