@@ -172,10 +172,10 @@
                         var thisGame = findParticularGame(game);
                         var participants = thisGame.getPlayers();
                         for(var player in participants){
-                            var data = {"players": getGamePlayers(game), "MyHand": participants[player].myHand, "WhosTurn":thisGame.getWhosTurn(), "StartingCard":thisGame.getCardInPlay()};
+                            var data = {"players": getGamePlayers(game), "MyHand": participants[player].myHand};
                             io.sockets.connected[participants[player].sessionId].emit("GameHasStarted", data);  
                         };
-                        nextPlayer(thisGame);
+                        updatePlayers(thisGame);
                     } catch (e){
                         console.log(e);
                     }
@@ -186,11 +186,13 @@
 
         client.on('makeAMove', function (username, gameName, theMove, callback) {
             io.sockets.in(gameName).emit('message', username + " has jmade a move");
-            console.log("The Move by: " + username + " in game: " + gameName + ", is: " + theMove);
-            
+            console.log("The Move by: " + username + " in game: " + gameName + ", is: ");
+            theMove.forEach( card => {
+                console.log(card.face);
+            })
             var thisGame = findParticularGame(gameName);
             thisGame.determineNextPlayersTurn();
-            nextPlayer(thisGame);
+            updatePlayers(thisGame);
             callback({error: 0});
         });
 
@@ -233,9 +235,9 @@
             }
         });
 
-        function nextPlayer(thisGame) {
+        function updatePlayers(thisGame) {
             if (!thisGame.gameOver) {
-                io.sockets.in(thisGame.name).emit("gameUpdate", {"playersTurn": thisGame.getWhosTurn(), "topCard": thisGame.getCardInPlay(), "direction": thisGame.clockwise});
+                io.sockets.in(thisGame.name).emit("gameUpdate", {"whosTurn": thisGame.getWhosTurn(), "topCard": thisGame.getCardInPlay(), "direction": thisGame.clockwise});
             }
         };
     });

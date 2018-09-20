@@ -14,7 +14,6 @@
 
     </head>
     <body ng-app="SwitchApp" ng-controller="SwitchController">
-        
         <nav class="navbar navbar-expand-lg navbar-light" style="background-color: green;">
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -33,9 +32,14 @@
             </div>
         </nav>
 
+        <label ng-if="whosTurn">{{whosTurn.name}}</label>
+        <img ng-if="direction && topCard" src="assets/images/clockwise.png" width="50" height="50" class="img-fluid img-thumbnail" alt="{{direction}}"/>
+        <img ng-if="!direction && topCard" src="assets/images/anticlockwise.png" width="50" height="50" class="img-fluid img-thumbnail" alt="{{direction}}"/>
+        <img ng-if="topCard" src="assets/images/cards/{{topCard.face}}.jpg" width="100" height="80" class="img-fluid img-thumbnail" alt="{{topCard.face}}"/>
+
         <div class="scrollmenu">
             <div class="btn-group-toggle" id="myCards" name="myCards" data-toggle="buttons" >
-                <label class="btn thiscard" ng-repeat="card in myHand" name="{{card.face}}{{$index + 1}}" ng-click="selectCard(card.face,$index + 1)">
+                <label class="btn thiscard" ng-repeat="card in myHand" name="{{card.face}}{{$index + 1}}" ng-click="selectCard($index + 1, card)">
                     <input type="checkbox" autocomplete="off" >
                     <img src="assets/images/cards/{{card.face}}.jpg" width="100" height="80" class="img-fluid img-thumbnail" alt="{{card.face}}"/>
                 </label>

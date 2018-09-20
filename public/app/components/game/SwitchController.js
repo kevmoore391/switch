@@ -8,12 +8,13 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     $scope.sessionId = null;
     $scope.username = '';
     $scope.password = '';
-    $scope.myGame = '';
-    $scope.selectedCards = null;
+    $scope.myGame = null;
+    $scope.selectedCards = [];
     $scope.availableGames = [];
     $scope.disableMoveButton = true;
     $scope.whosTurn = null;
     $scope.topCard = null;
+    $scope.direction = null;
     
     $scope.displayModal = function(){
         loginModal.css('display','block');
@@ -134,7 +135,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
                 $scope.checkForWinner($scope.myGame.name);
                 $scope.myHand = [];
                 $scope.selectedCards = [];
-                $scope.myGame = '';
+                $scope.myGame = null;
                 $scope.$apply();
             }
 
@@ -152,7 +153,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
                 $scope.notLoggedIn();
                 $scope.myHand = [];
                 $scope.selectedCards = [];
-                $scope.myGame = '';
+                $scope.myGame = null;
                 $scope.$apply();
             }
 
@@ -202,10 +203,10 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     });
 
     socket.on('gameUpdate', function(data) {
-        
-        $scope.whosTurn = data["WhosTurn"]
+        $scope.whosTurn = data["whosTurn"]
         $scope.topCard = data["topCard"]
-        $scope.disableMoveButton = data["playersTurn"].name === $scope.username;
+        $scope.disableMoveButton = data["whosTurn"].name === $scope.username;
+        $scope.direction = data["direction"];
         
         $scope.$apply();
     });
@@ -216,14 +217,16 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         });
     };
 
-    $scope.selectCard = function (cardName, index) {
-        cardName = cardName + index;
-        if($scope.selectedCards.indexOf(String(cardName)) == -1){
+    $scope.selectCard = function (index, card) {
+        console.log(index);
+        
+        cardName = card.face + index;
+        if($scope.selectedCards.indexOf(card) === -1){
             $('label[name='+ cardName +']').css("background", "red");
-            $scope.selectedCards.push(cardName);
+            $scope.selectedCards.push(card);
         } else {
             $('label[name='+ cardName +']').css("background", "white");
-            $scope.selectedCards.splice($scope.selectedCards.indexOf(cardName), 1);
+            $scope.selectedCards.splice($scope.selectedCards.indexOf(card), 1);
         }
     };
 
@@ -235,7 +238,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             } else if (data["error"] == 2){
                 $scope.notLoggedIn();
             } else {
-                $scope.removeCardsFromHand($scope.selectedCards);
+                $scope.removeCardsFromHand();
                 $scope.disableMoveButton = true;
                 $scope.$apply();
                 $scope.checkForWinner($scope.myGame.name);
@@ -243,10 +246,11 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         });
     };
 
-    $scope.removeCardsFromHand = function (cardsToRemove) {
+    $scope.removeCardsFromHand = function () {
         $scope.selectedCards.forEach(card => {
             $scope.myHand.splice($scope.myHand.indexOf(card), 1);
         })
+        $scope.selectedCards = [];
     };
 
     $scope.addCardToHand = function(card){
@@ -283,10 +287,11 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
 
     $scope.finishUp = function() {
         $scope.myHand = null;
-        $scope.selectedCards = null;
+        $scope.selectedCards = [];
         $scope.myGame = null;
         $scope.whosTurn = null;
         $scope.topCard = null;
+        $scope.direction = null;
     }
 
     $scope.loggedIn = function(){
