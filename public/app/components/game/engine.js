@@ -235,8 +235,7 @@
 
         function nextPlayer(thisGame) {
             if (!thisGame.gameOver) {
-                var playersTurn = thisGame.getWhosTurn();
-            io.sockets.in(thisGame.name).emit("nextPlayer", {"playersTurn": playersTurn, "topCard": thisGame.getCardInPlay(), "direction": thisGame.clockwise});
+                io.sockets.in(thisGame.name).emit("gameUpdate", {"playersTurn": thisGame.getWhosTurn(), "topCard": thisGame.getCardInPlay(), "direction": thisGame.clockwise});
             }
         };
     });

@@ -137,3 +137,11 @@ div.scrollmenu a {
 div.scrollmenu a:hover {
     background-color: #777;
 }
+
+.join-game-modal{
+    padding-top: 40px !important;
+}
+
+.list-group-item{
+    display: inline-grid;
+}

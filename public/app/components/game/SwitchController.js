@@ -9,11 +9,11 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     $scope.username = '';
     $scope.password = '';
     $scope.myGame = '';
-    $scope.selectedCards = [];
+    $scope.selectedCards = null;
     $scope.availableGames = [];
     $scope.disableMoveButton = true;
-    $scope.whosTurn = '';
-    $scope.topCard = '';
+    $scope.whosTurn = null;
+    $scope.topCard = null;
     
     $scope.displayModal = function(){
         loginModal.css('display','block');
@@ -97,7 +97,6 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             if ((data["gameCreated"]) && (data["gameJoined"])){
                 $scope.gameOn();
                 $scope.myGame = gameName;
-                $scope.getGameInfo();
             } else if (data["error"] === 1) {
                 alert("A game with this name already exists");
             };
@@ -108,8 +107,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         });
     };
 
-    $scope.joinGame = function () {
-        var gameName = $('#jname').val();
+    $scope.joinGame = function (gameName) {
         $('#joinModal').css('display','none');
         socket.emit('joinGame', $scope.username, gameName, function(data){
             
@@ -188,7 +186,6 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             data.forEach(game => {
                 $scope.availableGames.push(game);
             });
-            console.log($scope.availableGames);
             $scope.$apply();
         });
     }
@@ -201,33 +198,21 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         data["MyHand"].forEach(card => {
             $scope.addCardToHand(card);
         });
-        $scope.whosTurn = data["WhosTurn"];
-        $scope.topCard = data["StartingCard"]
-        $scope.getGameInfo();
         $scope.$apply();
     });
 
-    socket.on('Yourturn', function(data) {
-        if (data) {
-            $scope.disableMoveButton = false;
-        } else {
-            $scope.disableMoveButton = true;
-        }
+    socket.on('gameUpdate', function(data) {
+        
+        $scope.whosTurn = data["WhosTurn"]
+        $scope.topCard = data["topCard"]
+        $scope.disableMoveButton = data["playersTurn"].name === $scope.username;
+        
         $scope.$apply();
     });
 
     $scope.chatWithGame = function () {
         socket.emit('communicatewithgame', $scope.username, $scope.myGame, function(data){
             console.log(data);
-        });
-    };
-
-    $scope.getPlayers = function () {
-        socket.emit('getPlayers', $scope.username, function(data){
-            console.log("Players: ", data);
-            if (data["error"] == 2){
-                $scope.notLoggedIn();
-            }
         });
     };
 
@@ -253,7 +238,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
                 $scope.removeCardsFromHand($scope.selectedCards);
                 $scope.disableMoveButton = true;
                 $scope.$apply();
-                $scope.checkForWinner();
+                $scope.checkForWinner($scope.myGame.name);
             }
         });
     };
@@ -273,17 +258,17 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     };
 
     socket.on('playerLeft', function(data) {
-        $scope.checkForWinner();
+        $scope.checkForWinner($scope.myGame.name);
     });
 
     socket.on('GameOver', function(data) {
         console.log(data["winner"] + " won");
-        $scope.leaveGame();
+        $scope.finishUp();
     });
 
     socket.on('YouWin', function(data) {
         alert("WOO Well Done! you win the game!");
-        $$scope.leaveGame();
+        $scope.finishUp();
         
     });
 
@@ -295,6 +280,14 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             }
         });
     };
+
+    $scope.finishUp = function() {
+        $scope.myHand = null;
+        $scope.selectedCards = null;
+        $scope.myGame = null;
+        $scope.whosTurn = null;
+        $scope.topCard = null;
+    }
 
     $scope.loggedIn = function(){
         $('#loginBtn').css('display','none');

@@ -1,5 +1,5 @@
-function CheckTrick (card) {
-    this.checkTrick = function(){
+function CheckTrick () {
+    this.checkTrick = function(card){
         var handSize;
         var isTrick = false;
         var value = card.getValue();

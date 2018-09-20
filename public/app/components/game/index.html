@@ -92,19 +92,23 @@
         </div>
 
         <div id="joinModal" class="modal">
+            
             <form class="modal-content animate" onsubmit="event.preventDefault()">
-                <div class="imgcontainer">
-                    <span ng-click="closeModal()" class="close" title="Close Modal">&times;</span>
-                    <img src="img_avatar2.png" alt="Avatar" class="avatar">
-                </div>
-        
-                <div class="container">
-                    <div ng-repeat="game in availableGames">{{game.name}}</div>
-                    <label for="jname"><b>Game Name</b></label>
-                    <input type="text" placeholder="Game Name" name="jname" id="jname" required>
-        
-                    <button type="submit" ng-click="joinGame()">Create</button>
-                    
+                <span ng-click="closeModal()" class="close" title="Close Modal">&times;</span> 
+                <div class="container join-game-modal">
+                    <card ng-if="availableGames.length > 0">
+                        <ul ng-repeat="game in availableGames" class="list-group">
+                            <li class="list-group-item">
+                                <label>Name: {{game.name}}</label>
+                                <label>Players/Size: {{game.gamePlayers.length}}/{{game.limit}}</label>
+                                <label>Created By: {{game.creator}}</label>
+                                <input class="btn btn-info" type="button" ng-click="joinGame(game.name)" value="Join" />
+                            </li>
+                        </ul>
+                    </card>
+                    <div ng-if="availableGames.length === 0">
+                        <label>Sorry there are no available games yet!</label>
+                    </div>
                 </div>
             </form>
         </div>

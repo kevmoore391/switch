@@ -93,9 +93,8 @@ function Game (name, limit, creator) {
 		var proceed = false;
 		
 		var firstCard = this.Deck[nc];
-		
 		do{
-            if (trickChecker.CheckTrick(firstCard) == true){
+            if (this.trickChecker.checkTrick(firstCard)){
                 nc++;
                 firstCard = this.Deck[nc];
             } else {
