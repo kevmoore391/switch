@@ -15,6 +15,8 @@ function Game (name, limit, creator) {
     this.theTable = new TableCards();
     this.trickChecker = new CheckTrick();
     this.clockwise = true;
+    this.playerMustPickUp = false;
+    this.currentSuit = null;
     this.getName = function() {
         return this.name;
     };

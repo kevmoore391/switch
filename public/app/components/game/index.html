@@ -27,11 +27,12 @@
                     <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="makeGame" ng-click="displayCreateGameModal()">Create a Game</button>
                     <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="joinGame" ng-click="displayJoinGameModal()">Join A Game</button>
                     <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="leaveGame" ng-click="leaveGame()">Leave the Game</button>
-                    <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="makeAMove" ng-disabled="disableMoveButton" ng-click="playMove()">Make A move</button>
+                    <button class="btn btn-outline" style="color:white; border:white; display: none; width:auto;" id="makeAMove" ng-disabled="disableMoveButton || selectedCards.length === 0" ng-click="playMove()">Make A move</button>
                 </ul>
             </div>
         </nav>
-
+        
+        <label ng-if="!disableMoveButton && selectedCards.length === 0">Select Cards to play!</label>
         <label ng-if="whosTurn">{{whosTurn.name}}</label>
         <img ng-if="direction && topCard" src="assets/images/clockwise.png" width="50" height="50" class="img-fluid img-thumbnail" alt="{{direction}}"/>
         <img ng-if="!direction && topCard" src="assets/images/anticlockwise.png" width="50" height="50" class="img-fluid img-thumbnail" alt="{{direction}}"/>
@@ -43,12 +44,10 @@
                     <input type="checkbox" autocomplete="off" >
                     <img src="assets/images/cards/{{card.face}}.jpg" width="100" height="80" class="img-fluid img-thumbnail" alt="{{card.face}}"/>
                 </label>
-                
             </div>
         </div>
 
         <div id="loginModal" class="modal">
-        
             <form class="modal-content animate" onsubmit="event.preventDefault()">
                 <div class="imgcontainer">
                     <span ng-click="closeModal()" class="close" title="Close Modal">&times;</span>

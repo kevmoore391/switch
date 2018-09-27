@@ -25,7 +25,6 @@
         client.on('login', function (username, password, callback) {
             //this is where you check the user against db. 
             //lets assume thats all good for now.
-
             var loggedInAlready = isUserLoggedIn(username);
             if (loggedInAlready["loggedIn"]) {
                 var player = findParticularPlayer(username);
@@ -185,15 +184,30 @@
         });
 
         client.on('makeAMove', function (username, gameName, theMove, callback) {
-            io.sockets.in(gameName).emit('message', username + " has jmade a move");
-            console.log("The Move by: " + username + " in game: " + gameName + ", is: ");
-            theMove.forEach( card => {
-                console.log(card.face);
-            })
+            io.sockets.in(gameName).emit('message', username + " has made a move");
+            // console.log("The Move by: " + username + " in game: " + gameName + ", is: ");
+            // theMove.forEach( card => {
+            //     console.log(card.face);
+            // })
+
+            thePlayer = findParticularPlayer(username);
+            errorCode = null;
             var thisGame = findParticularGame(gameName);
-            thisGame.determineNextPlayersTurn();
-            updatePlayers(thisGame);
-            callback({error: 0});
+            if(!isUserLoggedIn(username)){
+                errorCode = 2;
+            } else if (!thePlayer.currentGame){
+                errorCode = 1;
+            } else if(!checkFirstCard(theMove[0], thisGame) || theMove.length === 0){
+                errorCode = 3;
+            } else {
+                errorCode = 0;
+                if(checkForWinner(gameName)){
+                    thisGame.determineNextPlayersTurn();
+                    updatePlayers(thisGame);
+                }
+            }
+            
+            callback({error: errorCode});
         });
 
         client.on('amIInAGame', function (username, callback) {
@@ -213,27 +227,29 @@
             };
         });
 
-        client.on('checkForWinner', function (game) {
+        function checkForWinner (game) {
             var theGame = getCurrentGameInfo(game);
-            
+            var winner = false;
             if(theGame.started && !theGame.winner) {
                 if (theGame.gamePlayers.length === 1){
                     player = theGame.gamePlayers[0];
                     io.sockets.connected[player.sessionId].emit("YouWin", data);
                     client.in(theGame).emit('GameOver', {"winner": player.username});
+                    winner = true;
                     theGame.setGameOver(true);
                 } else if( theGame.gamePlayers.length > 1) {
                     theGame.gamePlayers.forEach(currentPlayer => {
                         if(currentPlayer.myHand.length === 0) {
                             io.sockets.connected[currentPlayer.sessionId].emit("YouWin", data);
                             client.in(theGame).emit('GameOver', {"winner": player.username});
-                            theGame.setGameOver(true);
-                            return;
+                            winner = true;
+                            theGame.setGameOver(winner);
                         }
                     })
                 }
             }
-        });
+            return winner;
+        };
 
         function updatePlayers(thisGame) {
             if (!thisGame.gameOver) {
@@ -259,7 +275,7 @@
         var success = false;
         var thePlayer = findParticularPlayer(username);
         
-        if(thePlayer.currentGame != null){
+        if(thePlayer.currentGame){
             leaveGame(username, thePlayer.currentGame);
         }
 
@@ -340,7 +356,7 @@
         var theGame = findParticularGame(name);
         var thePlayer = findParticularPlayer(username);
         if((theGame) && (thePlayer)){
-            if ((theGame.limit > theGame.gamePlayers.length) && (thePlayer.currentGame == null) && !(theGame.started)){
+            if ((theGame.limit > theGame.gamePlayers.length) && (!thePlayer.currentGame) && !(theGame.started)){
                 theGame.addPlayer(thePlayer);
                 thePlayer.inGame(theGame.name);
                 success = true;
@@ -427,4 +443,36 @@
         return started;
     }
 
+    function checkCardIsValid (checkCard, previousCard) {
+		isValid = false;
+		if (checkCard.getValue() === previousCard.getValue()) {
+			valid = true;
+		}
+
+		return isValid;
+    }
+    
+    function isAceChanged (theGame) {
+        aceChanged = false;
+        if(theGame.currentSuit !== 4){
+            aceChanged = true;
+        }
+		return aceChanged;
+	}
+    
+    function checkFirstCard (checkCard, theGame) {
+
+		isValid = false;
+		playerCardValue = checkCard.value;
+		playerCardSuit = checkCard.suit;
+		tableCardValue = theGame.theTable.getTopTableCard().getValue();
+		tableCardSuit = theGame.theTable.getTopTableCard().getSuit();
+      
+		if (((playerCardValue === 0) && (!theGame.playerMustPickUp)) ||((playerCardValue == 0) && (playerCardSuit == 3)) || (playerCardValue == tableCardValue) || ((!isAceChanged(theGame)) && (playerCardSuit == tableCardSuit) && (!theGame.playerMustPickUp)) || ((isAceChanged(theGame)) && (playerCardSuit == theGame.currentSuit) && (!theGame.playerMustPickUp))) {
+			theGame.currentSuit = 4;
+			isValid = true;
+		}
+		
+		return isValid;
+    }
 }

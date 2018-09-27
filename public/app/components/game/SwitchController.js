@@ -131,8 +131,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         socket.emit('leaveGame', $scope.username, function(data){
             
             if (data["gameLeft"]){
-                $scope.leftGame();
-                $scope.checkForWinner($scope.myGame.name);
+                $scope.loggedIn();
                 $scope.myHand = [];
                 $scope.selectedCards = [];
                 $scope.myGame = null;
@@ -174,7 +173,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             $scope.gameOn();
             $scope.$apply();
         });
-    }
+    };
 
     $scope.findGames = function(){
         socket.emit('findGame', $scope.username, function(data){
@@ -189,11 +188,11 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
             });
             $scope.$apply();
         });
-    }
+    };
 
     $scope.startTheGame = function (gameName){
         socket.emit('StartTheGame', $scope.username, gameName);
-    }
+    };
 
     socket.on('GameHasStarted', function(data) {
         data["MyHand"].forEach(card => {
@@ -203,9 +202,9 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     });
 
     socket.on('gameUpdate', function(data) {
-        $scope.whosTurn = data["whosTurn"]
-        $scope.topCard = data["topCard"]
-        $scope.disableMoveButton = data["whosTurn"].name === $scope.username;
+        $scope.whosTurn = data["whosTurn"];
+        $scope.topCard = data["topCard"];
+        $scope.disableMoveButton = data["whosTurn"].name !== $scope.username;
         $scope.direction = data["direction"];
         
         $scope.$apply();
@@ -231,17 +230,23 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     };
 
     $scope.playMove = function () {
-        console.log("playing");
+        
         socket.emit('makeAMove', $scope.username, $scope.myGame, $scope.selectedCards, function(data){
-            if (data["error"] == 1){
+            console.log(data["error"]);
+            if (data["error"] === 1){
                 console.log("your not in this game!!");
-            } else if (data["error"] == 2){
+            } else if (data["error"] === 2){
                 $scope.notLoggedIn();
+            } else if (data["error"] === 3){
+                cardSuit = $scope.selectedCards[0].nameSuit[$scope.selectedCards[0].suit];
+                cardValue = $scope.selectedCards[0].nameValue[$scope.selectedCards[0].value];
+                alert("Please select " + $scope.topCard.nameSuit[$scope.topCard.suit] +
+                "s or " + $scope.topCard.nameValue[$scope.topCard.value] +"s");
+                
             } else {
                 $scope.removeCardsFromHand();
                 $scope.disableMoveButton = true;
                 $scope.$apply();
-                $scope.checkForWinner($scope.myGame.name);
             }
         });
     };
@@ -262,7 +267,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
     };
 
     socket.on('playerLeft', function(data) {
-        $scope.checkForWinner($scope.myGame.name);
+        console.log(data);
     });
 
     socket.on('GameOver', function(data) {
@@ -302,6 +307,7 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         $('#leaveGame').css('display','none');
         $('#joinGame').css('display', 'block');
         $('#makeAMove').css('display', 'none');
+        $scope.myGame = '';
     }
 
     $scope.gameOn = function(){
@@ -312,17 +318,6 @@ switchApp.controller('SwitchController', ['$scope', function($scope) {
         $('#leaveGame').css('display','block');
         $('#joinGame').css('display', 'none');
         $('#makeAMove').css('display', 'block');
-    }
-
-    $scope.leftGame = function(){
-        $('#loginBtn').css('display','none');
-        $('#logout').css('display','block');
-        $('#findGames').css('display','block');
-        $('#makeGame').css('display','block');
-        $('#leaveGame').css('display','none');
-        $('#joinGame').css('display', 'block');
-        $('#makeAMove').css('display', 'none');
-        $scope.myGame = '';
     }
 
     $scope.notLoggedIn = function(){
